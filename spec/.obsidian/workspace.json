@@ -1,0 +1,295 @@
+{
+  "main": {
+    "id": "74b4b8aa2029594d",
+    "type": "split",
+    "children": [
+      {
+        "id": "c08d1874f7fbc0c2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "760f6910c998049b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "设计spec.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "设计spec"
+            }
+          },
+          {
+            "id": "c7fd92a2ef1d99f6",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "设计spec.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "设计spec"
+            }
+          },
+          {
+            "id": "a9c05df3e4f84ea3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "设计spec.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "设计spec"
+            }
+          },
+          {
+            "id": "542a04dc10256225",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "设计spec.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "设计spec"
+            }
+          },
+          {
+            "id": "f08c91a69df06fcd",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "设计spec.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "设计spec"
+            }
+          },
+          {
+            "id": "e0402c9cc79da872",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "设计spec.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "设计spec"
+            }
+          },
+          {
+            "id": "1defeaaaeff62210",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "小票打印功能 spec.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "小票打印功能 spec"
+            }
+          }
+        ],
+        "currentTab": 6
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7b604ae17aed2a09",
+    "type": "split",
+    "children": [
+      {
+        "id": "155291d1eaa4ea3b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "28d41a5bafacb8f3",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "4812f005dabdb66f",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "b3de5cd22b652ea4",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "0e41e0f2965f68fe",
+    "type": "split",
+    "children": [
+      {
+        "id": "76e2d9ae51476e2d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9b8ab0dff3a82eee",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "小票打印功能 spec.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "小票打印功能 spec 的反向链接列表"
+            }
+          },
+          {
+            "id": "f41f0b0e41f632cf",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "小票打印功能 spec.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "小票打印功能 spec 的出链列表"
+            }
+          },
+          {
+            "id": "a9da578220edfc19",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "6770b37ffd1e5f8a",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "7110f605b08dd9ba",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "小票打印功能 spec.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "小票打印功能 spec 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
+    }
+  },
+  "active": "1defeaaaeff62210",
+  "lastOpenFiles": [
+    "开始开发提示词.md",
+    "prompts/T10-代码整理.md",
+    "prompts/T9-集成测试.md",
+    "prompts/T8-打印机设置.md",
+    "prompts/T7-日总结.md",
+    "prompts/T6-小票打印.md",
+    "prompts/T5-点单首页.md",
+    "prompts/T4-菜单管理.md",
+    "prompts/T3-数据模型.md",
+    "prompts/T2-数据库实现.md",
+    "prompts/T1-项目初始化.md",
+    "CodingAgent提示词汇总.md",
+    "prompts",
+    "开发计划.md",
+    "设计spec.md",
+    "AI设计文档的问题.md",
+    "菜单功能 spec.md",
+    "日总结功能 spec.md",
+    "小票打印功能 spec.md",
+    "点单功能 spec.md",
+    "进度log spec.md"
+  ]
+}
