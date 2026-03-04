@@ -97,12 +97,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "prompts/T1-项目初始化.md",
+                "file": "prompts/T4-菜单管理.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "T1-项目初始化"
+              "title": "T4-菜单管理"
             }
           }
         ],
@@ -270,26 +270,26 @@
   },
   "active": "1defeaaaeff62210",
   "lastOpenFiles": [
+    "设计spec.md",
+    "AI设计文档的问题.md",
+    "小票打印功能 spec.md",
+    "日总结功能 spec.md",
+    "prompts/T4-菜单管理.md",
+    "菜单功能 spec.md",
+    "prompts/T5-点单首页.md",
+    "进度log spec.md",
+    "CodingAgent提示词汇总.md",
+    "prompts/T1-项目初始化.md",
     "prompts/T2-数据库实现.md",
     "开发计划.md",
-    "进度log spec.md",
-    "prompts/T1-项目初始化.md",
-    "小票打印功能 spec.md",
     "开始开发提示词.md",
     "prompts/T10-代码整理.md",
     "prompts/T9-集成测试.md",
     "prompts/T8-打印机设置.md",
     "prompts/T7-日总结.md",
     "prompts/T6-小票打印.md",
-    "prompts/T5-点单首页.md",
-    "prompts/T4-菜单管理.md",
     "prompts/T3-数据模型.md",
-    "CodingAgent提示词汇总.md",
     "prompts",
-    "设计spec.md",
-    "AI设计文档的问题.md",
-    "菜单功能 spec.md",
-    "日总结功能 spec.md",
     "点单功能 spec.md"
   ]
 }
