@@ -1,10 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
+import 'package:receipt_printing/widgets/universal_image.dart';
 
 /// 菜品编辑页面
 ///
@@ -100,10 +100,9 @@ class _DishEditScreenState extends State<DishEditScreen> {
         child: _imagePath != null && _imagePath!.isNotEmpty
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  File(_imagePath!),
+                child: UniversalImage(
+                  path: _imagePath!,
                   fit: BoxFit.cover,
-                  width: double.infinity,
                 ),
               )
             : Column(
@@ -241,8 +240,8 @@ class _DishEditScreenState extends State<DishEditScreen> {
         // 更新现有菜品
         final updatedDish = widget.dish!.copyWith(
           name: name,
-          price: price,
-          imagePath: _imagePath,
+          price: Value(price),
+          imagePath: Value(_imagePath),
         );
         await menuProvider.updateDish(updatedDish);
       } else {

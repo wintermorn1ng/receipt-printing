@@ -33,6 +33,7 @@ dependencies:
 
   # 数据库相关
   sqflite: ^2.3.2
+  sqflite_common_ffi: ^2.3.2
   path_provider: ^2.1.2
   path: ^1.9.0
 
@@ -55,9 +56,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # 数据库 FFI 支持（用于单元测试）
-  sqflite_common_ffi: ^2.3.2
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

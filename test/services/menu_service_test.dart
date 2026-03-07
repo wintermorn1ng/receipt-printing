@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/services/menu_service.dart';
+import 'package:receipt_printing/models/dish.dart' show Value;
+import 'package:receipt_printing/models/dish.dart' show Value;
 
 void main() {
   late Database db;
@@ -97,7 +99,7 @@ void main() {
       test('should update dish information', () async {
         // Arrange
         final dish = await menuService.addDish('牛肉面', 15.0, null);
-        final updatedDish = dish.copyWith(name: '红烧牛肉面', price: 18.0);
+        final updatedDish = dish.copyWith(name: '红烧牛肉面', price: Value(18.0));
 
         // Act
         await menuService.updateDish(updatedDish);

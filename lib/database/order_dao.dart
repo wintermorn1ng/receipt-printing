@@ -45,6 +45,29 @@ class Order {
   static String _formatDate(DateTime dateTime) {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
   }
+
+  /// 创建副本并更新指定字段
+  Order copyWith({
+    int? id,
+    int? ticketNumber,
+    int? dishId,
+    String? dishName,
+    DateTime? createdAt,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      ticketNumber: ticketNumber ?? this.ticketNumber,
+      dishId: dishId ?? this.dishId,
+      dishName: dishName ?? this.dishName,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Order(id: $id, ticketNumber: $ticketNumber, dishId: $dishId, '
+        'dishName: $dishName, createdAt: $createdAt)';
+  }
 }
 
 /// 订单数据访问对象

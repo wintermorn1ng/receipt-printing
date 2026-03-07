@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
 import 'package:receipt_printing/services/menu_service.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
+import 'package:receipt_printing/models/dish.dart' show Value;
 
 /// 手动实现的 Mock MenuService
 class MockMenuService implements MenuService {
@@ -150,7 +151,7 @@ void main() {
         mockMenuService.setDishes([existingDish]);
         await menuProvider.loadDishes();
 
-        final updatedDish = existingDish.copyWith(name: '更新后的菜品', price: 20.0);
+        final updatedDish = existingDish.copyWith(name: '更新后的菜品', price: Value(20.0));
 
         // Act
         await menuProvider.updateDish(updatedDish);

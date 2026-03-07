@@ -2,8 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:receipt_printing/database/database_helper.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/database/order_dao.dart';
+import 'package:receipt_printing/models/dish.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
   group('Database Tests', () {
     late DatabaseHelper dbHelper;
     late DishDao dishDao;

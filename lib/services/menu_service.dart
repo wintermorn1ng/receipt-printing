@@ -1,4 +1,5 @@
 import 'package:receipt_printing/database/dish_dao.dart';
+import 'package:receipt_printing/models/dish.dart' show Value;
 
 /// 菜单服务类
 ///
@@ -37,7 +38,7 @@ class MenuService {
     );
 
     final id = await _dishDao.insert(dish);
-    return dish.copyWith(id: id);
+    return dish.copyWith(id: Value(id));
   }
 
   /// 更新菜品信息

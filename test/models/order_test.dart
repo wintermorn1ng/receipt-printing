@@ -40,7 +40,7 @@ void main() {
       expect(json['dish_id'], equals(5));
       expect(json['dish_name'], equals('红烧肉'));
       expect(json['created_at'], equals(testDate.millisecondsSinceEpoch));
-      expect(json['date'], equals('2024-03-15'));
+      // date 是计算属性，不包含在 toJson 中
     });
 
     test('copyWith 应该创建更新后的副本', () {

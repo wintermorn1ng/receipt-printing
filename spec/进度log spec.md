@@ -8,7 +8,7 @@
 | T2 - 数据库设计与实现 | ✅ 已完成 | 2026-03-03 |
 | T3 - 数据模型定义 | ✅ 已完成 | 2026-03-03 |
 | T4 - 菜单管理功能 | ✅ 已完成 | 2026-03-04 |
-| T5 - 点单首页（含取餐号） | 待开始 | - |
+| T5 - 点单首页（含取餐号） | ✅ 已完成 | 2026-03-06 |
 | T6 - 小票打印功能 | 待开始 | - |
 | T7 - 日总结功能 | 待开始 | - |
 | T8 - 蓝牙打印机设置 | 待开始 | - |
@@ -142,3 +142,114 @@ test/models/
 - 22个模型测试用例全部通过
 
 **下一步：** T4 - 菜单管理功能
+
+### T4: 菜单管理功能
+
+**完成内容：**
+- ✅ 实现 `MenuService` 菜单服务类
+  - `getAllDishes()` - 获取所有菜品
+  - `addDish()` - 添加菜品
+  - `updateDish()` - 更新菜品
+  - `deleteDish()` - 删除菜品
+  - `reorderDishes()` - 重新排序
+- ✅ 实现 `MenuProvider` 状态管理
+  - 响应式菜品列表
+  - 加载状态管理
+  - 错误处理
+- ✅ 实现 `DishGridItem` 菜品网格组件
+- ✅ 实现 `DishEditScreen` 菜品编辑页面
+- ✅ 实现 `MenuManagementScreen` 菜单管理页面
+  - 菜品网格展示
+  - 拖拽排序
+  - 增删改查操作
+
+**已创建文件：**
+```
+lib/services/menu_service.dart
+lib/providers/menu_provider.dart
+lib/widgets/dish_grid_item.dart
+lib/screens/dish_edit_screen.dart
+lib/screens/menu_management_screen.dart
+```
+
+**已创建测试文件：**
+```
+test/services/menu_service_test.dart
+test/providers/menu_provider_test.dart
+test/widgets/dish_grid_item_test.dart
+test/screens/dish_edit_screen_test.dart
+test/screens/menu_management_screen_test.dart
+```
+
+**下一步：** T5 - 点单首页
+
+### T5: 点单首页（含取餐号）
+
+**完成内容：**
+- ✅ 实现 `TicketService` 取餐号管理服务
+  - `getCurrentTicketNumber()` - 获取当前取餐号
+  - `incrementTicketNumber()` - 递增取餐号
+  - `resetTicketNumber()` - 重置为1
+  - `setTicketNumber()` - 设置起始号
+  - `checkDailyReset()` - 每日自动重置检查
+  - 使用 settings 表存储取餐号配置
+- ✅ 实现 `OrderService` 下单服务
+  - `placeOrder()` - 下单（协调取餐号和订单创建）
+  - `getTodayOrderCount()` - 今日订单数
+  - `getTodayOrders()` - 今日所有订单
+- ✅ 实现 `OrderProvider` 状态管理
+  - 当前取餐号状态
+  - 下单中状态（防重复点击）
+  - 今日订单数统计
+- ✅ 实现 `TicketNumberDisplay` 取餐号显示组件
+  - 大号字体显示 #128 格式
+  - 点击弹出菜单：重置、设置起始号
+  - 重置二次确认对话框
+- ✅ 更新 `HomeScreen` 点单首页
+  - 显示取餐号
+  - 菜品网格展示（复用 DishGridItem）
+  - 点击菜品下单
+  - 下单成功 Toast 提示
+  - 底部导航栏
+
+**已创建文件：**
+```
+lib/services/ticket_service.dart
+lib/services/order_service.dart
+lib/providers/order_provider.dart
+lib/widgets/ticket_number_display.dart
+```
+
+**已修改文件：**
+```
+lib/screens/home_screen.dart     # 完整实现
+lib/app.dart                      # 添加 Provider 配置
+lib/database/dish_dao.dart        # 使用 models/dish.dart 中的 Dish
+lib/database/order_dao.dart       # 添加 copyWith 方法
+```
+
+**已创建测试文件：**
+```
+test/services/ticket_service_test.dart
+test/services/order_service_test.dart
+test/providers/order_provider_test.dart
+test/widgets/ticket_number_display_test.dart
+test/screens/home_screen_test.dart
+```
+
+**技术要点：**
+- 使用 settings 表存储取餐号配置
+- 每日自动重置取餐号
+- 防重复点击（isPlacingOrder 状态）
+- Provider 状态管理
+- 143 个测试用例全部通过
+
+**验证标准：**
+- ✅ 显示当前取餐号
+- ✅ 点击菜品下单成功
+- ✅ 下单后取餐号自动+1
+- ✅ 重置有二次确认
+- ✅ 可以手动设置起始号
+- ✅ 每天自动重置
+
+**下一步：** T6 - 小票打印功能

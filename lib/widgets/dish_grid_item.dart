@@ -1,7 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:receipt_printing/database/dish_dao.dart';
+import 'universal_image.dart';
 
 /// 菜品网格项组件
 ///
@@ -94,8 +94,8 @@ class DishGridItem extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(12),
         ),
-        child: Image.file(
-          File(dish.imagePath!),
+        child: UniversalImage(
+          path: dish.imagePath!,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return _buildPlaceholder(theme);

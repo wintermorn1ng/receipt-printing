@@ -5,8 +5,14 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:receipt_printing/app.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
   testWidgets('App launches smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const App());
