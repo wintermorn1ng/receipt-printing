@@ -1,5 +1,5 @@
 import 'package:meta/meta.dart';
-import 'package:sqflite/sqflite.dart';
+import 'database_repository.dart';
 import 'database_helper.dart';
 
 /// 订单数据模型
@@ -72,22 +72,31 @@ class Order {
 
 /// 订单数据访问对象
 class OrderDao {
-  final DatabaseHelper? _dbHelper;
-  final Database? _testDb;
+  final DatabaseRepository? _repository;
+  final DatabaseRepository? _testRepository;
 
   static const String _tableName = 'orders';
 
-  /// 构造函数 - 使用默认数据库
-  OrderDao() : _dbHelper = DatabaseHelper(), _testDb = null;
+  /// 构造函数 - 使用默认数据库仓库
+  OrderDao() : _repository = null, _testRepository = null;
 
-  /// 构造函数 - 使用测试数据库
+  /// 构造函数 - 使用指定的数据库仓库
+  OrderDao.withRepository(DatabaseRepository repository)
+      : _repository = repository,
+        _testRepository = null;
+
+  /// 构造函数 - 使用测试仓库
   @visibleForTesting
-  OrderDao.withDatabase(Database db) : _dbHelper = null, _testDb = db;
+  OrderDao.withTestRepository(DatabaseRepository repository)
+      : _testRepository = repository,
+        _repository = null;
 
-  /// 获取数据库实例
-  Future<Database> get _database async {
-    if (_testDb != null) return _testDb!;
-    return _dbHelper!.database;
+  /// 获取数据库仓库实例
+  Future<DatabaseRepository> get _db async {
+    if (_testRepository != null) return _testRepository;
+    if (_repository != null) return _repository;
+    // 使用全局单例仓库
+    return getDefaultRepository();
   }
 
   /// 插入新订单
@@ -95,7 +104,7 @@ class OrderDao {
   /// 返回插入记录的 ID
   Future<int> insert(Order order) async {
     try {
-      final db = await _database;
+      final db = await _db;
       return await db.insert(_tableName, order.toMap());
     } catch (e) {
       throw Exception('插入订单失败: $e');
@@ -107,7 +116,7 @@ class OrderDao {
   /// [date] 格式: YYYY-MM-DD
   Future<List<Order>> getByDate(String date) async {
     try {
-      final db = await _database;
+      final db = await _db;
       final maps = await db.query(
         _tableName,
         where: 'date = ?',
@@ -125,7 +134,7 @@ class OrderDao {
   /// [date] 格式: YYYY-MM-DD
   Future<int> getOrderCountByDate(String date) async {
     try {
-      final db = await _database;
+      final db = await _db;
       final result = await db.rawQuery(
         'SELECT COUNT(*) as count FROM $_tableName WHERE date = ?',
         [date],
@@ -142,7 +151,7 @@ class OrderDao {
   /// [date] 格式: YYYY-MM-DD
   Future<Map<String, int>> getDishCountByDate(String date) async {
     try {
-      final db = await _database;
+      final db = await _db;
       final result = await db.rawQuery(
         '''
         SELECT dish_name, COUNT(*) as count
@@ -168,7 +177,7 @@ class OrderDao {
   /// [date] 格式: YYYY-MM-DD
   Future<Map<int, int>> getHourlyDistribution(String date) async {
     try {
-      final db = await _database;
+      final db = await _db;
       // 使用本地时间计算小时
       final result = await db.rawQuery(
         '''
@@ -201,7 +210,7 @@ class OrderDao {
   /// [date] 格式: YYYY-MM-DD
   Future<int> getMaxTicketNumber(String date) async {
     try {
-      final db = await _database;
+      final db = await _db;
       final result = await db.rawQuery(
         'SELECT MAX(ticket_number) as max FROM $_tableName WHERE date = ?',
         [date],

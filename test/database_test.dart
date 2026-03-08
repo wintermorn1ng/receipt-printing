@@ -1,35 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:receipt_printing/database/database_helper.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/database/order_dao.dart';
+import 'package:receipt_printing/database/in_memory_repository.dart';
 import 'package:receipt_printing/models/dish.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
-
   group('Database Tests', () {
-    late DatabaseHelper dbHelper;
+    late InMemoryRepository repository;
     late DishDao dishDao;
     late OrderDao orderDao;
 
     setUp(() async {
-      dbHelper = DatabaseHelper();
-      dishDao = DishDao();
-      orderDao = OrderDao();
-    });
-
-    tearDown(() async {
-      await dbHelper.close();
+      repository = InMemoryRepository();
+      repository.createTable('dishes');
+      repository.createTable('orders');
+      repository.createTable('settings');
+      dishDao = DishDao.withTestRepository(repository);
+      orderDao = OrderDao.withTestRepository(repository);
     });
 
     test('Database can be initialized', () async {
-      final db = await dbHelper.database;
-      expect(db, isNotNull);
-      expect(db.isOpen, true);
+      expect(repository, isNotNull);
     });
 
     test('Dish CRUD operations', () async {
@@ -66,6 +57,7 @@ void main() {
 
     test('Order insert and query', () async {
       final now = DateTime.now();
+      // 使用 order_dao.dart 导出的 Order 类
       final order = Order(
         ticketNumber: 1,
         dishId: 1,

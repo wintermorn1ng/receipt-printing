@@ -1,47 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
+import 'package:receipt_printing/database/in_memory_repository.dart';
 import 'package:receipt_printing/models/dish.dart';
 
 /// DishDao 单元测试
 ///
-/// 使用 sqflite_common_ffi 在桌面环境测试 SQLite 数据库
+/// 使用 InMemoryRepository 在所有平台测试数据库操作
 void main() {
-  // 初始化 FFI
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
-
   group('DishDao Tests', () {
-    late Database db;
+    late InMemoryRepository repository;
     late DishDao dishDao;
 
     setUp(() async {
-      // 每个测试使用独立的数据库实例
-      final dbPath = inMemoryDatabasePath;
-      db = await openDatabase(
-        dbPath,
-        version: 1,
-        onCreate: (db, version) async {
-          await db.execute('''
-            CREATE TABLE dishes (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT NOT NULL,
-              price REAL,
-              image_path TEXT,
-              sort_order INTEGER DEFAULT 0,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL
-            )
-          ''');
-        },
-      );
-      dishDao = DishDao.withDatabase(db);
-    });
-
-    tearDown(() async {
-      await db.close();
+      // 每个测试使用独立的内存数据库实例
+      repository = InMemoryRepository();
+      repository.createTable('dishes');
+      dishDao = DishDao.withTestRepository(repository);
     });
 
     test('插入菜品并获取', () async {
@@ -144,9 +118,9 @@ void main() {
 
       // Act - 重新排序：C, A, B
       final reordered = [
-        (await dishDao.getById(ids[2]))!, // C
-        (await dishDao.getById(ids[0]))!, // A
-        (await dishDao.getById(ids[1]))!, // B
+        (await dishDao.getById(ids[2]))!,
+        (await dishDao.getById(ids[0]))!,
+        (await dishDao.getById(ids[1]))!,
       ];
       await dishDao.updateSortOrder(reordered);
       final allDishes = await dishDao.getAll();
