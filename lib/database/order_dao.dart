@@ -155,4 +155,19 @@ class OrderDao {
       throw Exception('获取最大取餐号失败: $e');
     }
   }
+
+  /// 获取有订单的日期列表
+  ///
+  /// 返回所有有订单的日期（格式: YYYY-MM-DD），按日期降序排列
+  Future<List<String>> getAvailableDates() async {
+    try {
+      final db = await _db;
+      final result = await db.rawQuery(
+        'SELECT DISTINCT date FROM $_tableName ORDER BY date DESC',
+      );
+      return result.map((row) => row['date'] as String).toList();
+    } catch (e) {
+      throw Exception('获取有订单日期列表失败: $e');
+    }
+  }
 }

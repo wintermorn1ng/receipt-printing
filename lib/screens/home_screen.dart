@@ -4,6 +4,7 @@ import 'package:receipt_printing/models/dish.dart';
 import 'package:receipt_printing/models/order.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
 import 'package:receipt_printing/providers/order_provider.dart';
+import 'package:receipt_printing/screens/daily_summary_screen.dart';
 import 'package:receipt_printing/screens/menu_management_screen.dart';
 import 'package:receipt_printing/screens/print_preview_screen.dart';
 import 'package:receipt_printing/screens/printer_settings_screen.dart';
@@ -81,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return const PrinterSettingsScreen();
       case 3:
-        return _buildPlaceholder('日总结');
+        return const DailySummaryScreen();
       default:
         return _buildOrderView();
     }
