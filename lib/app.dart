@@ -4,9 +4,11 @@ import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/database/order_dao.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
 import 'package:receipt_printing/providers/order_provider.dart';
+import 'package:receipt_printing/providers/printer_provider.dart';
 import 'package:receipt_printing/screens/home_screen.dart';
 import 'package:receipt_printing/services/menu_service.dart';
 import 'package:receipt_printing/services/order_service.dart';
+import 'package:receipt_printing/services/print_service.dart';
 import 'package:receipt_printing/services/ticket_service.dart';
 
 /// 应用根组件
@@ -31,6 +33,15 @@ class App extends StatelessWidget {
         ),
         ChangeNotifierProvider<OrderProvider>(
           create: (_) => OrderProvider(orderService, ticketService),
+        ),
+        ChangeNotifierProvider<PrinterProvider>(
+          create: (_) {
+            final printService = PrintService();
+            final provider = PrinterProvider(printService);
+            // 启动时加载配置并尝试自动连接
+            provider.loadConfig();
+            return provider;
+          },
         ),
       ],
       child: MaterialApp(

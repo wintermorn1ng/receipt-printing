@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
-import 'package:sqflite/sqflite.dart';
 import '../database/order_dao.dart';
 import '../models/dish.dart';
+import '../models/models.dart';
 import 'ticket_service.dart';
 
 /// 下单服务
@@ -41,7 +41,7 @@ class OrderService {
     await _ticketService.incrementTicketNumber();
 
     // 返回带 id 的订单
-    return order.copyWith(id: id);
+    return order.copyWith(id: Value(id));
   }
 
   /// 获取今日订单数量

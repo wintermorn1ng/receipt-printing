@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:receipt_printing/database/dish_dao.dart';
-import 'package:receipt_printing/database/order_dao.dart';
+import 'package:receipt_printing/models/dish.dart';
+import 'package:receipt_printing/models/order.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
 import 'package:receipt_printing/providers/order_provider.dart';
 import 'package:receipt_printing/screens/menu_management_screen.dart';
-import 'package:receipt_printing/services/menu_service.dart';
-import 'package:receipt_printing/services/order_service.dart';
-import 'package:receipt_printing/services/ticket_service.dart';
+import 'package:receipt_printing/screens/print_preview_screen.dart';
+import 'package:receipt_printing/screens/printer_settings_screen.dart';
 import 'package:receipt_printing/widgets/dish_grid_item.dart';
 import 'package:receipt_printing/widgets/ticket_number_display.dart';
 
@@ -80,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const MenuManagementScreen();
       case 2:
-        return _buildPlaceholder('打印设置');
+        return const PrinterSettingsScreen();
       case 3:
         return _buildPlaceholder('日总结');
       default:
@@ -270,8 +269,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('#${order.ticketNumber} ${dish.name} 下单成功'),
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: '预览',
+              onPressed: () => _showPreview(order),
+            ),
           ),
         );
       } else if (orderProvider.error != null) {
@@ -283,6 +286,15 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     }
+  }
+
+  /// 显示打印预览
+  void _showPreview(Order order) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PrintPreviewScreen(order: order),
+      ),
+    );
   }
 
   /// 处理重置取餐号

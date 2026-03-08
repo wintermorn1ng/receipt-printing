@@ -33,6 +33,10 @@ class Order {
     );
   }
 
+  /// 从数据库 Map 转换为 Order 对象
+  /// [fromJson] 的别名，用于兼容旧代码
+  factory Order.fromMap(Map<String, dynamic> map) => Order.fromJson(map);
+
   /// 序列化为 JSON (Map)
   ///
   /// 用于写入数据库
@@ -45,6 +49,10 @@ class Order {
       'created_at': createdAt.millisecondsSinceEpoch,
     };
   }
+
+  /// 将 Order 对象转换为数据库 Map
+  /// [toJson] 的别名，用于兼容旧代码
+  Map<String, dynamic> toMap() => toJson();
 
   /// 创建副本并更新指定字段
   ///

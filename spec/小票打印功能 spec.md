@@ -151,3 +151,35 @@ void printTicket(Order order) {
 - **打印机协议**：ESC/POS 标准指令集
 - **支持纸张宽度**：58mm 热敏纸
 - **编码格式**：GBK/UTF-8（根据打印机支持）
+
+## 实现文件
+
+### 核心文件
+
+| 文件路径 | 说明 |
+|----------|------|
+| `lib/utils/print_renderer.dart` | 抽象渲染器基类和打印数据模型 |
+| `lib/utils/escpos_renderer.dart` | ESC/POS 蓝牙打印机渲染器 |
+| `lib/utils/preview_renderer.dart` | 页面预览渲染器 |
+| `lib/utils/print_formatter.dart` | ESC/POS 指令生成工具 |
+| `lib/utils/preview_line.dart` | 预览线条数据模型 |
+| `lib/services/print_service.dart` | 打印服务 |
+| `lib/screens/print_preview_screen.dart` | 打印预览页面 |
+| `lib/screens/printer_settings_screen.dart` | 打印机设置页面 |
+| `lib/providers/printer_provider.dart` | 打印机状态管理 Provider |
+
+### 依赖
+
+- `flutter_bluetooth_serial: ^0.4.0` - 蓝牙串口通信
+- `shared_preferences: ^2.2.2` - 本地配置存储
+- `intl: ^0.19.0` - 日期时间格式化
+
+## 验证结果
+
+- [x] 能生成正确的 ESC/POS 指令
+- [x] 能连接蓝牙打印机
+- [x] 能打印小票（内容正确）
+- [x] 能打印两联
+- [x] 打印失败有错误提示
+- [x] 预览页面能正确显示小票布局
+- [x] 渲染器可替换（打印/预览）

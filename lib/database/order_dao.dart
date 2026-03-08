@@ -1,74 +1,9 @@
 import 'package:meta/meta.dart';
 import 'database_repository.dart';
 import 'database_helper.dart';
+import '../models/order.dart';
 
-/// 订单数据模型
-class Order {
-  final int? id;
-  final int ticketNumber;
-  final int dishId;
-  final String dishName;
-  final DateTime createdAt;
-
-  Order({
-    this.id,
-    required this.ticketNumber,
-    required this.dishId,
-    required this.dishName,
-    required this.createdAt,
-  });
-
-  /// 从数据库 Map 转换为 Order 对象
-  factory Order.fromMap(Map<String, dynamic> map) {
-    return Order(
-      id: map['id'] as int?,
-      ticketNumber: map['ticket_number'] as int,
-      dishId: map['dish_id'] as int,
-      dishName: map['dish_name'] as String,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
-    );
-  }
-
-  /// 将 Order 对象转换为数据库 Map
-  Map<String, dynamic> toMap() {
-    return {
-      if (id != null) 'id': id,
-      'ticket_number': ticketNumber,
-      'dish_id': dishId,
-      'dish_name': dishName,
-      'created_at': createdAt.millisecondsSinceEpoch,
-      'date': _formatDate(createdAt),
-    };
-  }
-
-  /// 格式化日期为 YYYY-MM-DD
-  static String _formatDate(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
-  }
-
-  /// 创建副本并更新指定字段
-  Order copyWith({
-    int? id,
-    int? ticketNumber,
-    int? dishId,
-    String? dishName,
-    DateTime? createdAt,
-  }) {
-    return Order(
-      id: id ?? this.id,
-      ticketNumber: ticketNumber ?? this.ticketNumber,
-      dishId: dishId ?? this.dishId,
-      dishName: dishName ?? this.dishName,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'Order(id: $id, ticketNumber: $ticketNumber, dishId: $dishId, '
-        'dishName: $dishName, createdAt: $createdAt)';
-  }
-}
+export '../models/order.dart';
 
 /// 订单数据访问对象
 class OrderDao {
