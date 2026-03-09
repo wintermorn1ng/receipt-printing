@@ -4,6 +4,7 @@ import 'package:receipt_printing/models/dish.dart';
 import 'package:receipt_printing/models/order.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
 import 'package:receipt_printing/providers/order_provider.dart';
+import 'package:receipt_printing/providers/printer_provider.dart';
 import 'package:receipt_printing/screens/daily_summary_screen.dart';
 import 'package:receipt_printing/screens/menu_management_screen.dart';
 import 'package:receipt_printing/screens/print_preview_screen.dart';
@@ -53,6 +54,23 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('点单助手'),
         actions: [
+          // 蓝牙连接状态图标
+          Consumer<PrinterProvider>(
+            builder: (context, printerProvider, child) {
+              return IconButton(
+                icon: Icon(
+                  printerProvider.isConnected
+                      ? Icons.bluetooth_connected
+                      : Icons.bluetooth_disabled,
+                  color: printerProvider.isConnected ? Colors.blue : Colors.grey,
+                ),
+                onPressed: () => setState(() => _currentIndex = 2),
+                tooltip: printerProvider.isConnected
+                    ? '打印机已连接: ${printerProvider.config.deviceName ?? ""}'
+                    : '点击设置打印机',
+              );
+            },
+          ),
           // 取餐号显示
           Consumer<OrderProvider>(
             builder: (context, orderProvider, child) {
