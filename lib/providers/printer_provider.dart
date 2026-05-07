@@ -1,21 +1,66 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:bluetooth_print_plus/bluetooth_print_plus.dart';
+
 import '../models/order.dart';
 import '../models/printer_config.dart';
 import '../services/print_service.dart';
+import '../services/bluetooth_connection_manager.dart';
 
 /// 打印机状态管理 Provider
 ///
-/// 管理蓝牙设备搜索、连接和打印配置
+/// 管理蓝牙设备扫描、连接和打印配置。
+///
+/// 蓝牙连接状态统一由 [BluetoothConnectionManager] 管理，这里只做 UI 状态桥接。
+/// 状态订阅关系：
+/// - [BluetoothConnectionManager.stateStream] → Provider 的 notifyListeners
 class PrinterProvider extends ChangeNotifier {
   final PrintService _printService;
+  final BluetoothConnectionManager _connectionManager;
 
-  List<BluetoothDevice> _devices = [];
+  /// 扫描状态
   bool _isScanning = false;
-  bool _isConnecting = false;
-  PrinterConfig _config = PrinterConfig.defaultConfig;
 
-  PrinterProvider(this._printService);
+  /// 设备列表
+  List<BluetoothDevice> _devices = [];
+
+  /// 是否正在配置地址（用于保存配置时显示 loading）
+  bool _isConfiguring = false;
+
+  StreamSubscription<BluetoothConnectionEvent>? _connectionSubscription;
+
+  PrinterProvider(this._printService)
+      : _connectionManager = BluetoothConnectionManager.instance {
+    // 订阅连接状态变化，驱动 UI 刷新
+    _connectionSubscription = _connectionManager.stateStream.listen((_) {
+      notifyListeners();
+    });
+  }
+
+  // ── 蓝牙连接状态（代理自 ConnectionManager） ──
+
+  /// 是否已连接打印机
+  bool get isConnected => _connectionManager.isConnected;
+
+  /// 当前连接状态
+  BluetoothConnectionState get connectionState => _connectionManager.state;
+
+  /// 是否正在连接
+  bool get isConnecting =>
+      connectionState == BluetoothConnectionState.connecting;
+
+  /// 连接是否失败（带保存地址，等待重试）
+  bool get isConnectionError =>
+      connectionState == BluetoothConnectionState.connectionError;
+
+  /// 保存的蓝牙地址
+  String? get savedAddress => _connectionManager.savedAddress;
+
+  /// 保存的蓝牙名称
+  String? get savedName => _connectionManager.savedName;
+
+  // ── 扫描状态 ──
 
   /// 已发现的蓝牙设备列表
   List<BluetoothDevice> get devices => _devices;
@@ -23,36 +68,40 @@ class PrinterProvider extends ChangeNotifier {
   /// 是否正在搜索
   bool get isScanning => _isScanning;
 
-  /// 是否正在连接
-  bool get isConnecting => _isConnecting;
+  /// 是否正在配置（保存地址）
+  bool get isConfiguring => _isConfiguring;
 
-  /// 打印机配置
+  // ── 配置状态（打印选项，非蓝牙连接） ──
+
+  /// 打印机配置（打印选项部分）
   PrinterConfig get config => _config;
+  PrinterConfig _config = PrinterConfig.defaultConfig;
 
-  /// 是否已连接打印机
-  bool get isConnected => _printService.isConnected;
+  PrinterConfig get printerConfig => _config;
 
-  /// 当前连接的设备地址
-  String? get connectedDeviceAddress => _config.deviceAddress;
+  // ── 生命周期 ──
 
-  /// 加载保存的配置
-  Future<void> loadConfig() async {
-    _config = await _printService.getPrinterConfig();
-
-    // 尝试自动连接
-    if (_config.deviceAddress != null) {
-      try {
-        await _printService.connect(_config.deviceAddress!);
-      } catch (e) {
-        // 静默失败，不阻塞应用启动
-        debugPrint('自动连接失败: $e');
-      }
-    }
-
-    notifyListeners();
+  @override
+  void dispose() {
+    _connectionSubscription?.cancel();
+    super.dispose();
   }
 
+  // ── 初始化 ──
+
+  /// 初始化，加载配置并尝试自动连接
+  Future<void> initialize() async {
+    _config = await _printService.getPrinterConfig();
+    notifyListeners();
+
+    await _connectionManager.initialize();
+  }
+
+  // ── 蓝牙扫描（地址发现） ──
+
   /// 搜索蓝牙设备
+  ///
+  /// 用于用户主动点击"搜索设备"，找到后可调用 [configurePrinter] 保存地址。
   Future<void> scanDevices() async {
     if (_isScanning) return;
 
@@ -61,15 +110,8 @@ class PrinterProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 获取已配对设备
-      final bondedDevices = await FlutterBluetoothSerial.instance.getBondedDevices();
-
-      _devices = bondedDevices.where((device) {
-        // 过滤掉没有地址的设备
-        return device.address.isNotEmpty;
-      }).toList();
-
-      notifyListeners();
+      final found = await _connectionManager.scanDevices();
+      _devices = found;
     } catch (e) {
       debugPrint('搜索蓝牙设备失败: $e');
     } finally {
@@ -78,45 +120,69 @@ class PrinterProvider extends ChangeNotifier {
     }
   }
 
-  /// 连接设备
-  Future<bool> connect(BluetoothDevice device) async {
-    if (_isConnecting) return false;
+  // ── 蓝牙地址配置 ──
 
-    _isConnecting = true;
+  /// 配置打印机地址（持久化并连接）
+  ///
+  /// 用于用户从设备列表中选择一台设备作为默认打印机。
+  Future<void> configurePrinter(BluetoothDevice device) async {
+    if (_isConfiguring) return;
+
+    _isConfiguring = true;
     notifyListeners();
 
     try {
-      final success = await _printService.connect(device.address);
+      await _connectionManager.configureAddress(
+        device.address,
+        name: device.name.isNotEmpty ? device.name : '未知设备',
+      );
 
-      if (success) {
-        // 保存配置
-        _config = _config.copyWith(
-          deviceAddress: Value(device.address),
-          deviceName: Value(device.name ?? '未知设备'),
-        );
-        await _printService.savePrinterConfig(_config);
-      }
-
-      return success;
+      // 同步更新打印配置中的设备信息
+      _config = _config.copyWith(
+        deviceAddress: Value(device.address),
+        deviceName: Value(
+            device.name.isNotEmpty ? device.name : '未知设备'),
+      );
+      await _printService.savePrinterConfig(_config);
     } catch (e) {
-      debugPrint('连接失败: $e');
-      return false;
+      debugPrint('配置打印机失败: $e');
+      rethrow;
     } finally {
-      _isConnecting = false;
+      _isConfiguring = false;
       notifyListeners();
     }
   }
 
-  /// 断开连接
+  /// 主动断开连接（不清除保存的地址）
   Future<void> disconnect() async {
-    await _printService.disconnect();
+    await _connectionManager.disconnect();
+  }
+
+  /// 清除保存的蓝牙地址（完全重置）
+  Future<void> clearPrinterAddress() async {
+    await _connectionManager.clearSavedAddress();
+
+    _config = _config.copyWith(
+      deviceAddress: const Value(null),
+      deviceName: const Value(null),
+    );
+    await _printService.savePrinterConfig(_config);
     notifyListeners();
   }
+
+  /// 确保已连接（打印前调用）
+  ///
+  /// 如果已连接直接返回，如果断开则用保存的地址重连。
+  Future<void> ensureConnected() async {
+    await _connectionManager.ensureConnected();
+  }
+
+  // ── 打印选项配置 ──
 
   /// 更新配置
   Future<void> updateConfig(PrinterConfig config) async {
     _config = config;
-    await _printService.savePrinterConfig(config);
+    await _printService.savePrinterConfig(_config);
     notifyListeners();
   }
 
@@ -148,20 +214,30 @@ class PrinterProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── 打印操作 ──
+
   /// 测试打印
   Future<void> testPrint() async {
-    if (!isConnected) {
-      throw Exception('请先连接打印机');
-    }
-
-    // 创建一个测试订单
+    // ensureConnected 会在内部处理未连接的情况
+    await ensureConnected();
     final testOrder = Order(
       ticketNumber: 999,
       dishId: 0,
       dishName: '测试菜品',
       createdAt: DateTime.now(),
     );
-
     await _printService.printTicket(testOrder, _config);
+  }
+
+  /// 打印订单（单联）
+  Future<void> printOrder(Order order) async {
+    await ensureConnected();
+    await _printService.printTicket(order, _config);
+  }
+
+  /// 打印订单（两联）
+  Future<void> printOrderTwoCopies(Order order) async {
+    await ensureConnected();
+    await _printService.printTwoCopies(order, _config);
   }
 }

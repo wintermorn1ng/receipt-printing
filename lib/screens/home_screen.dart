@@ -57,17 +57,31 @@ class _HomeScreenState extends State<HomeScreen> {
           // 蓝牙连接状态图标
           Consumer<PrinterProvider>(
             builder: (context, printerProvider, child) {
+              final isConnected = printerProvider.isConnected;
+              final isError = printerProvider.isConnectionError;
+
+              IconData icon;
+              Color iconColor;
+              String tooltip;
+
+              if (isConnected) {
+                icon = Icons.bluetooth_connected;
+                iconColor = Colors.blue;
+                tooltip = '打印机已连接: ${printerProvider.savedName ?? ""}';
+              } else if (isError) {
+                icon = Icons.bluetooth_disabled;
+                iconColor = Colors.orange;
+                tooltip = '连接失败，点击重试';
+              } else {
+                icon = Icons.bluetooth_disabled;
+                iconColor = Colors.grey;
+                tooltip = '点击设置打印机';
+              }
+
               return IconButton(
-                icon: Icon(
-                  printerProvider.isConnected
-                      ? Icons.bluetooth_connected
-                      : Icons.bluetooth_disabled,
-                  color: printerProvider.isConnected ? Colors.blue : Colors.grey,
-                ),
+                icon: Icon(icon, color: iconColor),
                 onPressed: () => setState(() => _currentIndex = 2),
-                tooltip: printerProvider.isConnected
-                    ? '打印机已连接: ${printerProvider.config.deviceName ?? ""}'
-                    : '点击设置打印机',
+                tooltip: tooltip,
               );
             },
           ),
@@ -285,6 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (mounted) {
       if (order != null) {
+        // 先显示成功提示
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('#${order.ticketNumber} ${dish.name} 下单成功'),
@@ -296,6 +311,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         );
+
+        // 异步打印，不阻塞用户
+        _printOrder(order);
       } else if (orderProvider.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -305,6 +323,74 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     }
+  }
+
+  /// 打印订单
+  Future<void> _printOrder(Order order) async {
+    final printerProvider = context.read<PrinterProvider>();
+
+    // 打印机未连接时显示提示
+    if (!printerProvider.isConnected) {
+      if (mounted) {
+        _showPrintNotConnectedDialog();
+      }
+      return;
+    }
+
+    try {
+      final config = printerProvider.config;
+      if (config.printTwoCopies) {
+        await printerProvider.printOrderTwoCopies(order);
+      } else {
+        await printerProvider.printOrder(order);
+      }
+    } catch (e) {
+      // 打印失败显示错误对话框
+      if (mounted) {
+        _showPrintErrorDialog(e.toString());
+      }
+    }
+  }
+
+  /// 显示打印机未连接对话框
+  void _showPrintNotConnectedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('打印机未连接'),
+        content: const Text('请先在"打印设置"中连接蓝牙打印机'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() => _currentIndex = 2); // 跳转打印设置
+            },
+            child: const Text('去设置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示打印错误对话框
+  void _showPrintErrorDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('打印失败'),
+        content: Text(errorMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 显示打印预览

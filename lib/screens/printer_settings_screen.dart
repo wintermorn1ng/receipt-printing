@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:bluetooth_print_plus/bluetooth_print_plus.dart';
 import 'package:provider/provider.dart';
+
 import '../models/order.dart';
 import '../providers/printer_provider.dart';
+import '../services/bluetooth_connection_manager.dart';
 import 'print_preview_screen.dart';
 
 /// 打印机设置页面
 ///
-/// 管理蓝牙设备连接和小票打印配置
+/// 两大功能：
+/// 1. [蓝牙配置] - 搜索设备、配置地址、自动重连状态展示
+/// 2. [打印选项] - 店名、日期、两联等开关
 class PrinterSettingsScreen extends StatefulWidget {
   const PrinterSettingsScreen({super.key});
 
@@ -24,7 +28,6 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<PrinterProvider>();
       _shopNameController.text = provider.config.shopName ?? '';
-      provider.scanDevices();
     });
   }
 
@@ -45,22 +48,18 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // 蓝牙打印机部分
               _buildSectionTitle('蓝牙打印机'),
               _buildBluetoothSection(provider),
               const SizedBox(height: 24),
 
-              // 小票设置部分
               _buildSectionTitle('小票设置'),
               _buildTicketSettingsSection(provider),
               const SizedBox(height: 24),
 
-              // 测试打印部分
               _buildSectionTitle('测试打印'),
               _buildTestPrintSection(provider),
               const SizedBox(height: 24),
 
-              // 高级设置部分（预留）
               _buildSectionTitle('高级设置（预留）'),
               _buildAdvancedSection(),
             ],
@@ -82,10 +81,16 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     );
   }
 
+  // ── 蓝牙配置区块 ──
+
   Widget _buildBluetoothSection(PrinterProvider provider) {
     return Card(
       child: Column(
         children: [
+          // 连接状态头
+          _buildConnectionStatusHeader(provider),
+          const Divider(height: 1),
+
           // 搜索按钮
           ListTile(
             leading: const Icon(Icons.bluetooth_searching),
@@ -112,49 +117,159 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
             )
           else
             ...provider.devices.map((device) {
-              final isConnected = provider.connectedDeviceAddress == device.address;
-              final isConnecting = provider.isConnecting;
+              final isThisDeviceConnected =
+                  provider.savedAddress == device.address &&
+                      provider.isConnected;
+              final isThisDeviceConnecting =
+                  provider.savedAddress == device.address &&
+                      provider.isConnecting;
 
               return ListTile(
                 leading: Icon(
                   Icons.bluetooth,
-                  color: isConnected ? Colors.green : Colors.blue,
+                  color: isThisDeviceConnected ? Colors.green : Colors.blue,
                 ),
-                title: Text(device.name ?? '未知设备'),
+                title:
+                    Text(device.name.isNotEmpty ? device.name : '未知设备'),
                 subtitle: Text(device.address),
-                trailing: isConnected
-                    ? const Icon(Icons.check_circle, color: Colors.green)
-                    : isConnecting
+                trailing: isThisDeviceConnected
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green),
+                          const SizedBox(width: 4),
+                          const Text('已连接',
+                              style: TextStyle(color: Colors.green)),
+                        ],
+                      )
+                    : isThisDeviceConnecting
                         ? const SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : null,
-                onTap: isConnected || isConnecting
+                onTap: isThisDeviceConnected || isThisDeviceConnecting
                     ? null
-                    : () => _connectDevice(provider, device),
+                    : () => _configurePrinter(provider, device),
               );
             }),
+
+          // 已连接时的操作按钮
+          if (provider.isConnected) ...[
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.link_off, color: Colors.orange),
+              title: const Text('断开连接'),
+              subtitle: Text('当前: ${provider.savedName ?? provider.savedAddress}'),
+              onTap: () => _showDisconnectDialog(provider),
+            ),
+          ],
+
+          // 连接错误时显示重连按钮
+          if (provider.isConnectionError) ...[
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.error_outline, color: Colors.red),
+              title: const Text('连接失败'),
+              subtitle: Text('已保存: ${provider.savedName ?? provider.savedAddress}'),
+              trailing: TextButton(
+                onPressed: () => provider.ensureConnected(),
+                child: const Text('重试'),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Future<void> _connectDevice(PrinterProvider provider, BluetoothDevice device) async {
-    final success = await provider.connect(device);
-    if (mounted) {
-      if (success) {
+  /// 连接状态头部
+  Widget _buildConnectionStatusHeader(PrinterProvider provider) {
+    final state = provider.connectionState;
+    final name = provider.savedName;
+    final address = provider.savedAddress;
+
+    IconData icon;
+    Color color;
+    String text;
+    String? subtext;
+
+    switch (state) {
+      case BluetoothConnectionState.connected:
+        icon = Icons.bluetooth_connected;
+        color = Colors.green;
+        text = '已连接';
+        subtext = name ?? address;
+      case BluetoothConnectionState.connecting:
+        icon = Icons.bluetooth_searching;
+        color = Colors.blue;
+        text = '连接中...';
+        subtext = address;
+      case BluetoothConnectionState.connectionError:
+        icon = Icons.bluetooth_disabled;
+        color = Colors.red;
+        text = '连接失败';
+        subtext = '点击重试或搜索新设备';
+      case BluetoothConnectionState.disconnected:
+        if (address != null) {
+          icon = Icons.bluetooth_disabled;
+          color = Colors.orange;
+          text = '未连接';
+          subtext = '已保存: $name';
+        } else {
+          icon = Icons.bluetooth_disabled;
+          color = Colors.grey;
+          text = '未配置';
+          subtext = '搜索设备以配置打印机';
+        }
+    }
+
+    return Container(
+      color: color.withValues(alpha: 0.1),
+      child: ListTile(
+        leading: Icon(icon, color: color),
+        title: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: subtext != null ? Text(subtext) : null,
+        trailing: state == BluetoothConnectionState.connectionError
+            ? TextButton(
+                onPressed: () => provider.ensureConnected(),
+                child: const Text('重试'),
+              )
+            : state == BluetoothConnectionState.connected
+                ? TextButton(
+                    onPressed: () => provider.disconnect(),
+                    child: const Text('断开'),
+                  )
+                : null,
+      ),
+    );
+  }
+
+  Future<void> _configurePrinter(
+      PrinterProvider provider, BluetoothDevice device) async {
+    try {
+      await provider.configurePrinter(device);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('已连接到 ${device.name ?? "设备"}'),
+            content: Text(
+                '已配置打印机: ${device.name.isNotEmpty ? device.name : "设备"}'),
             behavior: SnackBarBehavior.floating,
           ),
         );
-      } else {
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('连接 ${device.name ?? "设备"} 失败'),
+            content: Text('配置失败: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -163,18 +278,42 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     }
   }
 
+  Future<void> _showDisconnectDialog(PrinterProvider provider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('断开连接'),
+        content: Text(
+            '确定断开与 ${provider.savedName ?? provider.savedAddress} 的连接吗？\n地址仍会保存，下次打开 APP 会自动重连。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('断开'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await provider.disconnect();
+    }
+  }
+
+  // ── 打印选项区块 ──
+
   Widget _buildTicketSettingsSection(PrinterProvider provider) {
     return Card(
       child: Column(
         children: [
-          // 打印店名开关
           SwitchListTile(
             title: const Text('打印店名'),
             value: provider.config.printShopName,
             onChanged: (value) => provider.togglePrintShopName(value),
           ),
-
-          // 店名输入框
           if (provider.config.printShopName)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -188,19 +327,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                 onChanged: (value) => provider.updateShopName(value),
               ),
             ),
-
           const Divider(),
-
-          // 打印日期时间开关
           SwitchListTile(
             title: const Text('打印日期时间'),
             value: provider.config.printDateTime,
             onChanged: (value) => provider.togglePrintDateTime(value),
           ),
-
           const Divider(),
-
-          // 打印两联开关
           SwitchListTile(
             title: const Text('打印两联小票'),
             value: provider.config.printTwoCopies,
@@ -211,27 +344,27 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     );
   }
 
+  // ── 测试打印区块 ──
+
   Widget _buildTestPrintSection(PrinterProvider provider) {
+    final canPrint = provider.isConnected;
+
     return Card(
       child: Column(
         children: [
-          // 打印测试小票
           ListTile(
             leading: const Icon(Icons.print),
             title: const Text('打印测试小票'),
             subtitle: Text(
-              provider.isConnected ? '已连接打印机' : '请先连接打印机',
+              canPrint ? '已连接打印机' : '请先配置并连接打印机',
               style: TextStyle(
-                color: provider.isConnected ? Colors.green : Colors.orange,
+                color: canPrint ? Colors.green : Colors.orange,
               ),
             ),
-            enabled: provider.isConnected,
-            onTap: provider.isConnected
-                ? () => _testPrint(provider)
-                : null,
+            enabled: canPrint,
+            onTap: canPrint ? () => _testPrint(provider) : null,
           ),
           const Divider(height: 1),
-          // 预览测试小票
           ListTile(
             leading: const Icon(Icons.visibility),
             title: const Text('预览测试小票'),
@@ -258,7 +391,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('测试打印失败: ${e.toString()}'),
+            content: Text('测试打印失败: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -267,16 +400,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     }
   }
 
-  /// 显示预览测试小票
   void _showPreview() {
-    // 创建一个测试订单用于预览
     final testOrder = Order(
       ticketNumber: 999,
       dishId: 0,
       dishName: '测试菜品',
       createdAt: DateTime.now(),
     );
-
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => PrintPreviewScreen(order: testOrder),
@@ -284,13 +414,15 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     );
   }
 
+  // ── 高级设置区块 ──
+
   Widget _buildAdvancedSection() {
     return Card(
       child: SwitchListTile(
         title: const Text('启用双打印机模式'),
         subtitle: const Text('（预留功能，暂不可用）'),
         value: false,
-        onChanged: null, // 禁用
+        onChanged: null,
       ),
     );
   }

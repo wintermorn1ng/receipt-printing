@@ -49,7 +49,7 @@ class DishGridItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(12),
                 ),
@@ -119,7 +119,7 @@ class DishGridItem extends StatelessWidget {
         child: Icon(
           Icons.restaurant,
           size: 48,
-          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
         ),
       ),
     );

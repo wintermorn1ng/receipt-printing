@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../models/order.dart';
-import '../models/printer_config.dart';
-import '../services/print_service.dart';
+import '../providers/printer_provider.dart';
 import '../utils/print_renderer.dart';
 import '../utils/preview_renderer.dart';
 import '../utils/preview_line.dart';
-import '../utils/escpos_renderer.dart';
+import '../services/bluetooth_connection_manager.dart';
 
 /// 打印预览页面
 ///
-/// 展示小票预览样式并支持打印
+/// 展示小票预览样式并支持打印。
+///
+/// 打印时通过 [PrinterProvider.ensureConnected] 确保连接后发送。
 class PrintPreviewScreen extends StatefulWidget {
   final Order order;
 
@@ -24,39 +27,36 @@ class PrintPreviewScreen extends StatefulWidget {
 
 class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
   late final PreviewRenderer _previewRenderer;
-  late final PrintService _printService;
-  PrinterConfig? _config;
   bool _isPrinting = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _previewRenderer = PreviewRenderer();
-    _printService = PrintService();
-
-    // 加载预览数据
     _loadPreview();
   }
 
   Future<void> _loadPreview() async {
-    // 获取打印机配置
-    _config = await _printService.getPrinterConfig();
+    final provider = context.read<PrinterProvider>();
+    final config = provider.config;
 
-    // 生成预览数据
     final printData = PrintData(
       ticketNumber: widget.order.ticketNumber,
       dishName: widget.order.dishName,
-      shopName: _config?.printShopName == true ? _config?.shopName : null,
-      dateTime: _config?.printDateTime == true ? widget.order.createdAt : null,
+      shopName: config.printShopName ? config.shopName : null,
+      dateTime: config.printDateTime ? widget.order.createdAt : null,
     );
 
     await _previewRenderer.render(printData);
+    if (mounted) {
+      setState(() => _isInitialized = true);
+    }
   }
 
   @override
   void dispose() {
     _previewRenderer.dispose();
-    _printService.dispose();
     super.dispose();
   }
 
@@ -77,24 +77,19 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
   Future<void> _handlePrint() async {
     if (_isPrinting) return;
 
-    setState(() {
-      _isPrinting = true;
-    });
+    final provider = context.read<PrinterProvider>();
 
-    // 切换到真正的打印机渲染器
-    final escposRenderer = ESCPOSRenderer();
-    _printService.setRenderer(escposRenderer);
+    setState(() => _isPrinting = true);
 
     try {
-      // 如果未连接，先尝试连接
-      if (!escposRenderer.isConnected && _config?.deviceAddress != null) {
-        await escposRenderer.connect(_config!.deviceAddress!);
-      }
+      // 确保已连接
+      await provider.ensureConnected();
 
-      if (_config?.printTwoCopies == true) {
-        await _printService.printTwoCopies(widget.order, _config!);
+      // 打印
+      if (provider.config.printTwoCopies) {
+        await provider.printOrderTwoCopies(widget.order);
       } else {
-        await _printService.printTicket(widget.order, _config!);
+        await provider.printOrder(widget.order);
       }
 
       if (mounted) {
@@ -105,21 +100,30 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
           ),
         );
       }
+    } on PrintException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('打印失败: ${e.message}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('打印失败: ${e.toString()}'),
+            content: Text('打印失败: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } finally {
-      await escposRenderer.dispose();
-      setState(() {
-        _isPrinting = false;
-      });
+      if (mounted) {
+        setState(() => _isPrinting = false);
+      }
     }
   }
 
@@ -132,7 +136,7 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
       body: StreamBuilder<List<PreviewLine>>(
         stream: _previewRenderer.linesStream,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (!_isInitialized || !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -155,39 +159,46 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
                 ],
               ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 300,
-                ),
+                constraints: const BoxConstraints(maxWidth: 300),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 小票头部
-                    const Icon(
-                      Icons.receipt_long,
-                      size: 32,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.receipt_long, size: 32, color: Colors.grey),
                     const SizedBox(height: 8),
                     const Text(
                       '预览',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const Divider(),
-                    // 预览内容
                     ...lines.map((line) => _buildPreviewLine(line)),
                     const Divider(),
-                    // 小票底部
-                    Text(
-                      _config?.deviceName ?? '未连接打印机',
-                      style: TextStyle(
-                        color: _config?.deviceName != null
-                            ? Colors.green
-                            : Colors.orange,
-                        fontSize: 12,
-                      ),
+                    Consumer<PrinterProvider>(
+                      builder: (context, provider, _) {
+                        final name = provider.savedName;
+                        final state = provider.connectionState;
+
+                        String text;
+                        Color color;
+
+                        if (state == BluetoothConnectionState.connected) {
+                          text = name ?? '已连接';
+                          color = Colors.green;
+                        } else if (state == BluetoothConnectionState.connecting) {
+                          text = '连接中...';
+                          color = Colors.orange;
+                        } else if (state == BluetoothConnectionState.connectionError) {
+                          text = '连接失败';
+                          color = Colors.red;
+                        } else {
+                          text = '未配置打印机';
+                          color = Colors.grey;
+                        }
+
+                        return Text(
+                          text,
+                          style: TextStyle(color: color, fontSize: 12),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -209,19 +220,25 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: FilledButton.icon(
-                  onPressed: _isPrinting ? null : _handlePrint,
-                  icon: _isPrinting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.print),
-                  label: Text(_isPrinting ? '打印中...' : '打印'),
+                child: Consumer<PrinterProvider>(
+                  builder: (context, provider, _) {
+                    final canPrint = provider.isConnected;
+
+                    return FilledButton.icon(
+                      onPressed: canPrint && !_isPrinting ? _handlePrint : null,
+                      icon: _isPrinting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.print),
+                      label: Text(_isPrinting ? '打印中...' : '打印'),
+                    );
+                  },
                 ),
               ),
             ],

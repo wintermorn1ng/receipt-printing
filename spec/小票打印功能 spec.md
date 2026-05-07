@@ -69,20 +69,39 @@
 
 ### 蓝牙连接逻辑
 
-1. **首次连接**
-   - 进入打印设置页面
-   - 点击搜索设备
-   - 选择蓝牙打印机进行配对
-   - 配对成功后自动连接
+1. **地址持久化 + 自动重连（核心设计）**
+   - 蓝牙地址作为配置持久化到 SharedPreferences
+   - 应用启动时，`BluetoothConnectionManager` 自动加载保存的地址并尝试连接
+   - 连接失败时带退避重试（1s → 2s → 4s → ... → 最大 30s，最多 5 次）
+   - 重试耗尽后进入 `connectionError` 状态，UI 显示"连接失败"，用户可点击重试
 
-2. **持久化连接**
-   - 保存最后一次连接的打印机 MAC 地址
-   - 应用启动时自动尝试连接
-   - 连接失败时显示提示，但不阻塞使用
+2. **状态机**
+   ```
+   [disconnected] → [connecting] → [connected]
+                          ↑            │
+                          │            ↓
+                    [connectionError] ─┘
+                          (有保存地址时触发重试)
+   ```
+   - `disconnected`：无保存地址，或用户主动断开
+   - `connecting`：正在连接
+   - `connected`：已连接
+   - `connectionError`：连接失败（有保存地址，等待重试）
 
-3. **连接状态**
-   - 主界面显示打印机连接状态图标
-   - 未连接时点击可跳转设置页面
+3. **连接状态统一管理**
+   - `BluetoothConnectionManager` 单例管理所有蓝牙连接状态
+   - UI 通过 `PrinterProvider` 订阅 `stateStream`，状态变化自动触发 `notifyListeners`
+   - 打印前调用 `ensureConnected()` 确保已连接
+
+4. **首次配置**
+   - 用户点击"搜索设备"扫描附近蓝牙设备
+   - 从列表中选择一台设备，该地址被持久化并立即尝试连接
+   - 连接成功后保存设备名称和地址
+
+5. **连接状态展示**
+   - 主界面 AppBar 蓝牙图标反映实际连接状态（connected / connecting / error / disconnected）
+   - 设置页面顶部显示连接状态头（带颜色标识）
+   - 已连接设备显示绿色勾选，操作按钮变为"断开"
 
 ## 多联打印
 
@@ -158,19 +177,20 @@ void printTicket(Order order) {
 
 | 文件路径 | 说明 |
 |----------|------|
+| `lib/services/bluetooth_connection_manager.dart` | 蓝牙连接状态机、持久化、自动重连（核心新组件） |
+| `lib/services/print_service.dart` | 打印服务（渲染和发送指令） |
+| `lib/providers/printer_provider.dart` | 打印机状态管理 Provider（UI 状态桥接） |
 | `lib/utils/print_renderer.dart` | 抽象渲染器基类和打印数据模型 |
 | `lib/utils/escpos_renderer.dart` | ESC/POS 蓝牙打印机渲染器 |
 | `lib/utils/preview_renderer.dart` | 页面预览渲染器 |
 | `lib/utils/print_formatter.dart` | ESC/POS 指令生成工具 |
 | `lib/utils/preview_line.dart` | 预览线条数据模型 |
-| `lib/services/print_service.dart` | 打印服务 |
 | `lib/screens/print_preview_screen.dart` | 打印预览页面 |
 | `lib/screens/printer_settings_screen.dart` | 打印机设置页面 |
-| `lib/providers/printer_provider.dart` | 打印机状态管理 Provider |
 
 ### 依赖
 
-- `flutter_bluetooth_serial: ^0.4.0` - 蓝牙串口通信
+- `bluetooth_print_plus: ^2.4.6` - 蓝牙打印（已替换原 `flutter_bluetooth_serial`）
 - `shared_preferences: ^2.2.2` - 本地配置存储
 - `intl: ^0.19.0` - 日期时间格式化
 
@@ -183,3 +203,6 @@ void printTicket(Order order) {
 - [x] 打印失败有错误提示
 - [x] 预览页面能正确显示小票布局
 - [x] 渲染器可替换（打印/预览）
+- [x] 蓝牙地址持久化，应用启动自动连接
+- [x] 连接失败带退避重试
+- [x] 状态变化通过 stateStream 通知 UI

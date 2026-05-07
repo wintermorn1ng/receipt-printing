@@ -37,7 +37,6 @@ dependencies:
   path: ^1.9.0
 
   # 蓝牙打印
-  flutter_bluetooth_serial: ^0.4.0
 
   # 状态管理
   provider: ^6.1.2
@@ -54,6 +53,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  bluetooth_print_plus: ^2.4.6
+  charset_converter: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,9 @@ dev_dependencies:
   # Mock 测试
   mockito: ^5.4.4
   build_runner: ^2.4.9
+
+  # 数据库测试
+  sqflite_common_ffi: ^2.3.3
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

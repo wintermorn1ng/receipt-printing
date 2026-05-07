@@ -39,7 +39,7 @@ class App extends StatelessWidget {
             final printService = PrintService();
             final provider = PrinterProvider(printService);
             // 启动时加载配置并尝试自动连接
-            provider.loadConfig();
+            provider.initialize();
             return provider;
           },
         ),

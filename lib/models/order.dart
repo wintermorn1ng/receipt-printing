@@ -47,6 +47,7 @@ class Order {
       'dish_id': dishId,
       'dish_name': dishName,
       'created_at': createdAt.millisecondsSinceEpoch,
+      'date': date,
     };
   }
 
