@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:receipt_printing/database/dish_dao.dart';
-import 'universal_image.dart';
+import 'package:receipt_printing/models/dish.dart';
+import 'package:receipt_printing/widgets/universal_image.dart';
 
 /// 菜品网格项组件
 ///

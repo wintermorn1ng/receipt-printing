@@ -31,6 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # 公开 API 注解
+  meta: ^1.12.0
+
   # 数据库相关
   sqflite: ^2.3.2
   path_provider: ^2.1.2

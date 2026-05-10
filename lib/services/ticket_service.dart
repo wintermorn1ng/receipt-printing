@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 import '../database/database_repository.dart';
 import '../database/database_helper.dart';
 
@@ -27,6 +28,12 @@ class TicketService {
   TicketService.withTestRepository(DatabaseRepository repository)
       : _testRepository = repository,
         _repository = null;
+
+  /// 构造函数 - 使用 sqflite Database 实例（测试用）
+  @visibleForTesting
+  factory TicketService.withDatabase(sqflite.Database db) {
+    return TicketService.withRepository(SqfliteRepositoryWrapper(db));
+  }
 
   /// 获取数据库仓库实例
   Future<DatabaseRepository> get _db async {

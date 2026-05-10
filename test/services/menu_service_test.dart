@@ -2,8 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/services/menu_service.dart';
-import 'package:receipt_printing/models/dish.dart' show Value;
-import 'package:receipt_printing/models/dish.dart' show Value;
+import 'package:receipt_printing/models/dish.dart' show Value, Dish;
 
 void main() {
   late Database db;

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../database/order_dao.dart';
 import '../models/dish.dart';
-import '../models/order.dart' as model;
 import '../services/order_service.dart';
 import '../services/ticket_service.dart';
 

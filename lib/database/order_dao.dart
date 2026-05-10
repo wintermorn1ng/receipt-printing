@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 import 'database_repository.dart';
 import 'database_helper.dart';
 import '../models/order.dart';
@@ -25,6 +26,12 @@ class OrderDao {
   OrderDao.withTestRepository(DatabaseRepository repository)
       : _testRepository = repository,
         _repository = null;
+
+  /// 构造函数 - 使用 sqflite Database 实例（测试用）
+  @visibleForTesting
+  factory OrderDao.withDatabase(sqflite.Database db) {
+    return OrderDao.withRepository(SqfliteRepositoryWrapper(db));
+  }
 
   /// 获取数据库仓库实例
   Future<DatabaseRepository> get _db async {

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
 import 'package:receipt_printing/screens/dish_edit_screen.dart';
-import 'package:receipt_printing/services/menu_service.dart';
 import 'package:receipt_printing/widgets/dish_grid_item.dart';
 
 /// 菜单管理页面

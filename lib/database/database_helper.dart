@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 import 'database_repository.dart';
 import 'sqflite_repository.dart';
 import 'in_memory_repository.dart';
@@ -55,7 +55,7 @@ class DatabaseRepositoryFactory {
   }
 
   /// 创建数据库表（SQLite）
-  static Future<void> _onCreate(Database db, int version) async {
+  static Future<void> _onCreate(sqflite.Database db, int version) async {
     // dishes 表 - 菜品信息
     await db.execute('''
       CREATE TABLE dishes (
@@ -97,7 +97,7 @@ class DatabaseRepositoryFactory {
 
   /// 数据库升级
   static Future<void> _onUpgrade(
-      Database db, int oldVersion, int newVersion) async {
+      sqflite.Database db, int oldVersion, int newVersion) async {
     // 后续版本升级时在此处理
     if (oldVersion < 2) {
       // 版本 1 升级到版本 2 的操作
@@ -125,6 +125,160 @@ class _DefaultRepository {
 /// 这是 DAO 层获取默认仓库的推荐方式
 Future<DatabaseRepository> getDefaultRepository() {
   return _DefaultRepository.getInstance();
+}
+
+/// Sqflite Database 包装器
+///
+/// 将 sqflite.Database 实例适配为 DatabaseRepository 接口
+/// 用于测试场景，方便直接传入 sqflite.Database
+class SqfliteRepositoryWrapper implements DatabaseRepository {
+  final sqflite.Database _db;
+
+  SqfliteRepositoryWrapper(this._db);
+
+  @override
+  Future<int> insert(String table, Map<String, dynamic> values) {
+    return _db.insert(table, values);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> query(
+    String table, {
+    List<String>? columns,
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+  }) {
+    return _db.query(
+      table,
+      columns: columns,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<int> update(
+    String table,
+    Map<String, dynamic> values, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) {
+    return _db.update(
+      table,
+      values,
+      where: where,
+      whereArgs: whereArgs,
+    );
+  }
+
+  @override
+  Future<int> delete(
+    String table, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) {
+    return _db.delete(
+      table,
+      where: where,
+      whereArgs: whereArgs,
+    );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> rawQuery(
+    String sql, [
+    List<Object?>? arguments,
+  ]) {
+    return _db.rawQuery(sql, arguments);
+  }
+
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function(Transaction txn) action,
+  ) async {
+    return _db.transaction((txn) => action(_SqfliteWrapperTransaction(txn)));
+  }
+
+  @override
+  Future<void> close() async {
+    await _db.close();
+  }
+
+  @override
+  Future<void> open() async {
+    // sqflite 数据库已经是打开状态
+  }
+}
+
+/// SqfliteRepositoryWrapper 的事务实现
+class _SqfliteWrapperTransaction implements Transaction {
+  final sqflite.Transaction _txn;
+
+  _SqfliteWrapperTransaction(this._txn);
+
+  @override
+  Future<int> insert(String table, Map<String, dynamic> values) {
+    return _txn.insert(table, values);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> query(
+    String table, {
+    List<String>? columns,
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+  }) {
+    return _txn.query(
+      table,
+      columns: columns,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<int> update(
+    String table,
+    Map<String, dynamic> values, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) {
+    return _txn.update(
+      table,
+      values,
+      where: where,
+      whereArgs: whereArgs,
+    );
+  }
+
+  @override
+  Future<int> delete(
+    String table, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) {
+    return _txn.delete(
+      table,
+      where: where,
+      whereArgs: whereArgs,
+    );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> rawQuery(
+    String sql, [
+    List<Object?>? arguments,
+  ]) {
+    return _txn.rawQuery(sql, arguments);
+  }
 }
 
 /// 数据库帮助类（已废弃，请使用 DatabaseRepositoryFactory）

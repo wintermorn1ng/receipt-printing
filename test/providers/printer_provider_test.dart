@@ -3,38 +3,18 @@ import 'package:receipt_printing/models/printer_config.dart';
 import 'package:receipt_printing/models/order.dart';
 import 'package:receipt_printing/providers/printer_provider.dart';
 import 'package:receipt_printing/services/print_service.dart';
-
-/// PrintService 的测试替身
-class FakePrintService {
-  PrinterConfig _config = PrinterConfig.defaultConfig;
-  bool saveCalled = false;
-
-  Future<PrinterConfig> getPrinterConfig() async => _config;
-
-  Future<void> savePrinterConfig(PrinterConfig config) async {
-    _config = config;
-    saveCalled = true;
-  }
-
-  void setConfig(PrinterConfig config) {
-    _config = config;
-  }
-}
+import 'package:receipt_printing/utils/print_renderer.dart';
 
 class _MockPrintService implements PrintService {
-  final FakePrintService _fake;
-
-  _MockPrintService(this._fake);
-
   @override
   bool get isConnected => false;
 
   @override
-  Future<PrinterConfig> getPrinterConfig() => _fake.getPrinterConfig();
+  Future<PrinterConfig> getPrinterConfig() async =>
+      PrinterConfig.defaultConfig;
 
   @override
-  Future<void> savePrinterConfig(PrinterConfig config) =>
-      _fake.savePrinterConfig(config);
+  Future<void> savePrinterConfig(PrinterConfig config) async {}
 
   @override
   Future<bool> connect(String address) async => true;
@@ -53,15 +33,16 @@ class _MockPrintService implements PrintService {
 
   @override
   void setRenderer(PrintRenderer renderer) {}
+
+  @override
+  PrintRenderer get renderer => throw UnimplementedError();
 }
 
 void main() {
   late PrinterProvider printerProvider;
-  late FakePrintService fakePrintService;
 
   setUp(() {
-    fakePrintService = FakePrintService();
-    printerProvider = PrinterProvider(_MockPrintService(fakePrintService));
+    printerProvider = PrinterProvider(_MockPrintService());
   });
 
   group('PrinterProvider', () {
