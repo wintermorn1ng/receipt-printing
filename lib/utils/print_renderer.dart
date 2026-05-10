@@ -14,11 +14,15 @@ class PrintData {
   /// 日期时间（可选）
   final DateTime? dateTime;
 
+  /// 切纸前进纸行数
+  final int gapLines;
+
   const PrintData({
     required this.ticketNumber,
     required this.dishName,
     this.shopName,
     this.dateTime,
+    this.gapLines = 0,
   });
 
   @override
@@ -29,15 +33,16 @@ class PrintData {
           ticketNumber == other.ticketNumber &&
           dishName == other.dishName &&
           shopName == other.shopName &&
-          dateTime == other.dateTime;
+          dateTime == other.dateTime &&
+          gapLines == other.gapLines;
 
   @override
-  int get hashCode => Object.hash(ticketNumber, dishName, shopName, dateTime);
+  int get hashCode => Object.hash(ticketNumber, dishName, shopName, dateTime, gapLines);
 
   @override
   String toString() {
     return 'PrintData(ticketNumber: $ticketNumber, dishName: $dishName, '
-        'shopName: $shopName, dateTime: $dateTime)';
+        'shopName: $shopName, dateTime: $dateTime, gapLines: $gapLines)';
   }
 }
 

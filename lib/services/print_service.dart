@@ -61,6 +61,7 @@ class PrintService {
       dishName: order.dishName,
       shopName: config.printShopName ? config.shopName : null,
       dateTime: config.printDateTime ? order.createdAt : null,
+      gapLines: config.printGapLines,
     );
 
     await renderer.render(printData);
@@ -75,6 +76,7 @@ class PrintService {
       dishName: order.dishName,
       shopName: config.printShopName ? config.shopName : null,
       dateTime: config.printDateTime ? order.createdAt : null,
+      gapLines: config.printGapLines,
     );
 
     await renderer.renderTwoCopies(printData);

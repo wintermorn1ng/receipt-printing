@@ -339,6 +339,34 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
             value: provider.config.printTwoCopies,
             onChanged: (value) => provider.togglePrintTwoCopies(value),
           ),
+          const Divider(),
+          ListTile(
+            title: const Text('切纸前进纸行数'),
+            subtitle: Text(
+              '当前: ${provider.config.printGapLines} 行（约 ${(provider.config.printGapLines * 0.75).toStringAsFixed(1)}mm）',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Text('0'),
+                Expanded(
+                  child: Slider(
+                    value: provider.config.printGapLines.toDouble(),
+                    min: 0,
+                    max: 10,
+                    divisions: 10,
+                    label: '${provider.config.printGapLines} 行',
+                    onChanged: (value) =>
+                        provider.updatePrintGapLines(value.round()),
+                  ),
+                ),
+                const Text('10'),
+              ],
+            ),
+          ),
         ],
       ),
     );

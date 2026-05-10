@@ -52,6 +52,12 @@ class PrintFormatter {
     return [lf];
   }
 
+  /// 进纸 n 行（用于切纸前留白）
+  /// ESC d n: 打印并进纸 n 行
+  static List<int> feedLines(int n) {
+    return [esc, 0x64, n];
+  }
+
   /// 进纸并切纸（部分切纸）
   static List<int> feedAndCut() {
     return [gs, 0x56, 0x01]; // GS V 1
@@ -69,12 +75,14 @@ class PrintFormatter {
   /// [shopName] 店名（可选）
   /// [printDateTime] 是否打印日期时间
   /// [dateTime] 指定日期时间（可选，默认使用当前时间）
+  /// [gapLines] 切纸前进纸行数（留白），默认 0
   Future<List<int>> formatTicket({
     required int ticketNumber,
     required String dishName,
     String? shopName,
     bool printDateTime = false,
     DateTime? dateTime,
+    int gapLines = 0,
   }) async {
     final List<int> bytes = [];
 
@@ -125,6 +133,10 @@ class PrintFormatter {
     }
 
     bytes.addAll(lineFeed());
+    // 进纸留白（切纸前空白）
+    if (gapLines > 0) {
+      bytes.addAll(feedLines(gapLines));
+    }
     bytes.addAll(feedAndCut());
 
     return bytes;

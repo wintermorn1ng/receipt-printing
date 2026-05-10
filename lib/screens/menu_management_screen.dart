@@ -18,6 +18,14 @@ class MenuManagementScreen extends StatefulWidget {
 class _MenuManagementScreenState extends State<MenuManagementScreen> {
   bool _isEditMode = false;
 
+  // 内嵌添加表单
+  final _nameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isAdding = false;
+
+  // 临时存储解析出的待添加菜品预览
+  List<String> _previewNames = [];
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +33,46 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MenuProvider>().loadDishes();
     });
+
+    // 监听名称输入，实时解析逗号分隔的菜品
+    _nameController.addListener(_updatePreviewNames);
+  }
+
+  @override
+  void dispose() {
+    _nameController.removeListener(_updatePreviewNames);
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  /// 更新预览的菜品名称列表
+  void _updatePreviewNames() {
+    final text = _nameController.text;
+    if (text.isEmpty) {
+      setState(() => _previewNames = []);
+      return;
+    }
+
+    // 按逗号分隔，支持中英文逗号
+    final names = text
+        .split(RegExp(r'[,，]'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    // 只在变化时更新
+    if (names.length != _previewNames.length ||
+        !_listEquals(names, _previewNames)) {
+      setState(() => _previewNames = names);
+    }
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -46,32 +94,208 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
-          // 添加按钮
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _navigateToAddDish,
-            tooltip: '添加菜品',
+        ],
+      ),
+      body: Column(
+        children: [
+          // 内嵌添加表单
+          _buildInlineAddForm(),
+
+          // 菜品网格
+          Expanded(
+            child: Consumer<MenuProvider>(
+              builder: (context, menuProvider, child) {
+                if (menuProvider.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final dishes = menuProvider.dishes;
+
+                if (dishes.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                return _isEditMode
+                    ? _buildReorderableGrid(dishes)
+                    : _buildNormalGrid(dishes);
+              },
+            ),
           ),
         ],
       ),
-      body: Consumer<MenuProvider>(
-        builder: (context, menuProvider, child) {
-          if (menuProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    );
+  }
 
-          final dishes = menuProvider.dishes;
+  /// 内嵌添加表单
+  Widget _buildInlineAddForm() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 名称输入框 + 添加按钮
+            Row(
+              children: [
+                // 名称输入框
+                Expanded(
+                  child: TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      hintText: '输入菜名（逗号分隔多个）',
+                      prefixIcon: const Icon(Icons.restaurant_menu),
+                      suffixIcon: _nameController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _nameController.clear();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _addDishes(),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return '请输入菜名';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // 添加按钮
+                SizedBox(
+                  height: 56,
+                  child: FilledButton.icon(
+                    onPressed: _isAdding ? null : _addDishes,
+                    icon: _isAdding
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.add),
+                    label: const Text('添加'),
+                  ),
+                ),
+              ],
+            ),
 
-          if (dishes.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          return _isEditMode
-              ? _buildReorderableGrid(dishes)
-              : _buildNormalGrid(dishes);
-        },
+            // 批量添加预览
+            if (_previewNames.length > 1) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    '将添加 ${_previewNames.length} 个菜品：',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  ..._previewNames.take(5).map(
+                        (name) => Chip(
+                          label: Text(
+                            name,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          padding: EdgeInsets.zero,
+                          labelPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                  if (_previewNames.length > 5)
+                    Text(
+                      '...等${_previewNames.length}个',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
+  }
+
+  /// 添加菜品
+  Future<void> _addDishes() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final text = _nameController.text.trim();
+    if (text.isEmpty) return;
+
+    // 解析菜品名称列表
+    final names = text
+        .split(RegExp(r'[,，]'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    if (names.isEmpty) return;
+
+    setState(() => _isAdding = true);
+
+    try {
+      final count = await context.read<MenuProvider>().addDishes(
+            names: names,
+          );
+
+      if (mounted) {
+        // 清空表单
+        _nameController.clear();
+
+        // 显示成功提示
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(count > 1 ? '已添加 $count 个菜品' : '已添加: ${names.first}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('添加失败: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isAdding = false);
+      }
+    }
   }
 
   /// 构建空状态提示
@@ -94,7 +318,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '点击右上角 + 号添加菜品',
+            '在上方输入框添加菜品',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.outlineVariant,
                 ),
@@ -125,6 +349,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
             final dish = dishes[index];
             return DishGridItem(
               dish: dish,
+              onTap: () => _navigateToEditDish(dish),
               onLongPress: () => _showDishOptions(dish),
             );
           },
@@ -257,22 +482,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           SnackBar(content: Text('删除失败: $e')),
         );
       }
-    }
-  }
-
-  /// 导航到添加菜品页面
-  Future<void> _navigateToAddDish() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const DishEditScreen(),
-      ),
-    );
-
-    if (result == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('菜品已添加')),
-      );
     }
   }
 

@@ -60,6 +60,29 @@ class MenuProvider extends ChangeNotifier {
     }
   }
 
+  /// 批量添加菜品
+  ///
+  /// [names] 菜品名称列表（支持逗号分隔）
+  /// [price] 价格（可选，所有菜品共用）
+  ///
+  /// 返回成功添加的数量
+  Future<int> addDishes({
+    required List<String> names,
+    double? price,
+  }) async {
+    _clearError();
+
+    try {
+      final dishes = await _menuService.addDishes(names, price);
+      _dishes.addAll(dishes);
+      notifyListeners();
+      return dishes.length;
+    } catch (e) {
+      _setError('批量添加菜品失败: $e');
+      rethrow;
+    }
+  }
+
   /// 更新菜品
   ///
   /// [dish] 要更新的菜品对象

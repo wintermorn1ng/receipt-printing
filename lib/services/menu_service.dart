@@ -1,5 +1,4 @@
 import 'package:receipt_printing/database/dish_dao.dart';
-import 'package:receipt_printing/models/dish.dart' show Value;
 
 /// 菜单服务类
 ///
@@ -39,6 +38,34 @@ class MenuService {
 
     final id = await _dishDao.insert(dish);
     return dish.copyWith(id: Value(id));
+  }
+
+  /// 批量添加菜品
+  ///
+  /// [names] 菜品名称列表（支持逗号分隔的字符串解析后的列表）
+  /// [price] 价格（可选，所有菜品共用）
+  ///
+  /// 返回添加成功的菜品列表
+  Future<List<Dish>> addDishes(List<String> names, double? price) async {
+    final now = DateTime.now();
+    final addedDishes = <Dish>[];
+
+    for (final name in names) {
+      final trimmedName = name.trim();
+      if (trimmedName.isEmpty) continue;
+
+      final dish = Dish(
+        name: trimmedName,
+        price: price,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      final id = await _dishDao.insert(dish);
+      addedDishes.add(dish.copyWith(id: Value(id)));
+    }
+
+    return addedDishes;
   }
 
   /// 更新菜品信息

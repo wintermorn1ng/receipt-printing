@@ -108,6 +108,7 @@ class ESCPOSRenderer implements PrintRenderer {
         shopName: data.shopName,
         printDateTime: data.dateTime != null,
         dateTime: data.dateTime,
+        gapLines: data.gapLines,
       );
 
       final dataToSend = Uint8List.fromList(bytes);

@@ -54,6 +54,14 @@ class PreviewRenderer implements PrintRenderer {
       lines.add(PreviewLine(''));
     }
 
+    // 切纸前进纸空白（预览时显示为虚线标记）
+    if (data.gapLines > 0) {
+      lines.add(PreviewLine(''));
+      lines.add(PreviewLine('─' * 20, isDimmed: true));
+      lines.add(PreviewLine('  ↑ 进纸 ${data.gapLines} 行', isDimmed: true));
+      lines.add(PreviewLine('─' * 20, isDimmed: true));
+    }
+
     return lines;
   }
 

@@ -46,6 +46,7 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
       dishName: widget.order.dishName,
       shopName: config.printShopName ? config.shopName : null,
       dateTime: config.printDateTime ? widget.order.createdAt : null,
+      gapLines: config.printGapLines,
     );
 
     await _previewRenderer.render(printData);
@@ -69,6 +70,7 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
         style: TextStyle(
           fontSize: line.isLarge ? 24 : 14,
           fontWeight: line.isBold ? FontWeight.bold : FontWeight.normal,
+          color: line.isDimmed ? Colors.grey : Colors.black,
         ),
       ),
     );
