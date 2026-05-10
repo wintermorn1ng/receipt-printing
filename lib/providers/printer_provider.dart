@@ -221,6 +221,13 @@ class PrinterProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 更新票间间距行数
+  Future<void> updatePrintTicketGapLines(int lines) async {
+    _config = _config.copyWith(printTicketGapLines: lines);
+    await _printService.savePrinterConfig(_config);
+    notifyListeners();
+  }
+
   // ── 打印操作 ──
 
   /// 测试打印

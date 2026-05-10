@@ -17,12 +17,16 @@ class PrintData {
   /// 切纸前进纸行数
   final int gapLines;
 
+  /// 两联打印时，两张票之间的间距行数
+  final int ticketGapLines;
+
   const PrintData({
     required this.ticketNumber,
     required this.dishName,
     this.shopName,
     this.dateTime,
     this.gapLines = 0,
+    this.ticketGapLines = 0,
   });
 
   @override
@@ -34,15 +38,16 @@ class PrintData {
           dishName == other.dishName &&
           shopName == other.shopName &&
           dateTime == other.dateTime &&
-          gapLines == other.gapLines;
+          gapLines == other.gapLines &&
+          ticketGapLines == other.ticketGapLines;
 
   @override
-  int get hashCode => Object.hash(ticketNumber, dishName, shopName, dateTime, gapLines);
+  int get hashCode => Object.hash(ticketNumber, dishName, shopName, dateTime, gapLines, ticketGapLines);
 
   @override
   String toString() {
     return 'PrintData(ticketNumber: $ticketNumber, dishName: $dishName, '
-        'shopName: $shopName, dateTime: $dateTime, gapLines: $gapLines)';
+        'shopName: $shopName, dateTime: $dateTime, gapLines: $gapLines, ticketGapLines: $ticketGapLines)';
   }
 }
 

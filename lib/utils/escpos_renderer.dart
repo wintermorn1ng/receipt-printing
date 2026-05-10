@@ -128,6 +128,18 @@ class ESCPOSRenderer implements PrintRenderer {
     // 第一联
     await render(data);
     await Future.delayed(const Duration(milliseconds: 500));
+
+    // 在两张票之间插入间距（仅进纸，不切纸）
+    if (data.ticketGapLines > 0) {
+      try {
+        final bytes = PrintFormatter.feedLines(data.ticketGapLines);
+        await BluetoothPrintPlus.write(Uint8List.fromList(bytes));
+        await Future.delayed(Duration(milliseconds: 100 + data.ticketGapLines * 50));
+      } catch (e) {
+        _log('renderTwoCopies 插入票间间距失败: $e，忽略错误继续打印');
+      }
+    }
+
     // 第二联
     await render(data);
   }

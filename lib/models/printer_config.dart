@@ -36,6 +36,10 @@ class PrinterConfig {
   /// 58mm纸一般设 3~5 行，约 3~5mm
   final int printGapLines;
 
+  /// 打印两联时，两张票之间的间距行数
+  /// 58mm纸一般设 3~5 行，约 3~5mm
+  final int printTicketGapLines;
+
   const PrinterConfig({
     this.deviceAddress,
     this.deviceName,
@@ -47,6 +51,7 @@ class PrinterConfig {
     this.customerPrinterAddress,
     this.kitchenPrinterAddress,
     this.printGapLines = 3,
+    this.printTicketGapLines = 3,
   });
 
   /// 默认配置
@@ -65,6 +70,7 @@ class PrinterConfig {
       customerPrinterAddress: json['customer_printer_address'] as String?,
       kitchenPrinterAddress: json['kitchen_printer_address'] as String?,
       printGapLines: json['print_gap_lines'] as int? ?? 3,
+      printTicketGapLines: json['print_ticket_gap_lines'] as int? ?? 3,
     );
   }
 
@@ -81,6 +87,7 @@ class PrinterConfig {
       'customer_printer_address': customerPrinterAddress,
       'kitchen_printer_address': kitchenPrinterAddress,
       'print_gap_lines': printGapLines,
+      'print_ticket_gap_lines': printTicketGapLines,
     };
   }
 
@@ -98,6 +105,7 @@ class PrinterConfig {
     Value<String?>? customerPrinterAddress,
     Value<String?>? kitchenPrinterAddress,
     int? printGapLines,
+    int? printTicketGapLines,
   }) {
     return PrinterConfig(
       deviceAddress:
@@ -115,6 +123,7 @@ class PrinterConfig {
           ? kitchenPrinterAddress.value
           : this.kitchenPrinterAddress,
       printGapLines: printGapLines ?? this.printGapLines,
+      printTicketGapLines: printTicketGapLines ?? this.printTicketGapLines,
     );
   }
 
@@ -132,7 +141,8 @@ class PrinterConfig {
           dualPrinterMode == other.dualPrinterMode &&
           customerPrinterAddress == other.customerPrinterAddress &&
           kitchenPrinterAddress == other.kitchenPrinterAddress &&
-          printGapLines == other.printGapLines;
+          printGapLines == other.printGapLines &&
+          printTicketGapLines == other.printTicketGapLines;
 
   @override
   int get hashCode => Object.hash(
@@ -146,6 +156,7 @@ class PrinterConfig {
         customerPrinterAddress,
         kitchenPrinterAddress,
         printGapLines,
+        printTicketGapLines,
       );
 
   @override
@@ -156,7 +167,8 @@ class PrinterConfig {
         'dualPrinterMode: $dualPrinterMode, '
         'customerPrinterAddress: $customerPrinterAddress, '
         'kitchenPrinterAddress: $kitchenPrinterAddress, '
-        'printGapLines: $printGapLines)';
+        'printGapLines: $printGapLines, '
+        'printTicketGapLines: $printTicketGapLines)';
   }
 }
 

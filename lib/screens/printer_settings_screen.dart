@@ -367,6 +367,34 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
               ],
             ),
           ),
+          const Divider(),
+          ListTile(
+            title: const Text('票间间距行数'),
+            subtitle: Text(
+              '打印两联时，两张票之间的间距。当前: ${provider.config.printTicketGapLines} 行（约 ${(provider.config.printTicketGapLines * 0.75).toStringAsFixed(1)}mm）',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Text('0'),
+                Expanded(
+                  child: Slider(
+                    value: provider.config.printTicketGapLines.toDouble(),
+                    min: 0,
+                    max: 10,
+                    divisions: 10,
+                    label: '${provider.config.printTicketGapLines} 行',
+                    onChanged: (value) =>
+                        provider.updatePrintTicketGapLines(value.round()),
+                  ),
+                ),
+                const Text('10'),
+              ],
+            ),
+          ),
         ],
       ),
     );

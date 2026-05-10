@@ -62,6 +62,7 @@ class PrintService {
       shopName: config.printShopName ? config.shopName : null,
       dateTime: config.printDateTime ? order.createdAt : null,
       gapLines: config.printGapLines,
+      ticketGapLines: config.printTicketGapLines,
     );
 
     await renderer.render(printData);
@@ -77,6 +78,7 @@ class PrintService {
       shopName: config.printShopName ? config.shopName : null,
       dateTime: config.printDateTime ? order.createdAt : null,
       gapLines: config.printGapLines,
+      ticketGapLines: config.printTicketGapLines,
     );
 
     await renderer.renderTwoCopies(printData);
