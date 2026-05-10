@@ -54,6 +54,13 @@ class PreviewRenderer implements PrintRenderer {
       lines.add(PreviewLine(''));
     }
 
+    // 诗词（如果提供）
+    if (data.poetryText != null && data.poetryText!.isNotEmpty) {
+      lines.add(PreviewLine('·' * 20));
+      lines.add(PreviewLine(data.poetryText!, isDimmed: true));
+      lines.add(PreviewLine(''));
+    }
+
     // 切纸前进纸空白（预览时显示为虚线标记）
     if (data.gapLines > 0) {
       lines.add(PreviewLine(''));

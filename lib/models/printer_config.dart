@@ -40,6 +40,9 @@ class PrinterConfig {
   /// 58mm纸一般设 3~5 行，约 3~5mm
   final int printTicketGapLines;
 
+  /// 是否在小票末尾打印古诗词
+  final bool printPoetry;
+
   const PrinterConfig({
     this.deviceAddress,
     this.deviceName,
@@ -52,6 +55,7 @@ class PrinterConfig {
     this.kitchenPrinterAddress,
     this.printGapLines = 3,
     this.printTicketGapLines = 3,
+    this.printPoetry = true,
   });
 
   /// 默认配置
@@ -71,6 +75,7 @@ class PrinterConfig {
       kitchenPrinterAddress: json['kitchen_printer_address'] as String?,
       printGapLines: json['print_gap_lines'] as int? ?? 3,
       printTicketGapLines: json['print_ticket_gap_lines'] as int? ?? 3,
+      printPoetry: json['print_poetry'] as bool? ?? true,
     );
   }
 
@@ -88,6 +93,7 @@ class PrinterConfig {
       'kitchen_printer_address': kitchenPrinterAddress,
       'print_gap_lines': printGapLines,
       'print_ticket_gap_lines': printTicketGapLines,
+      'print_poetry': printPoetry,
     };
   }
 
@@ -106,6 +112,7 @@ class PrinterConfig {
     Value<String?>? kitchenPrinterAddress,
     int? printGapLines,
     int? printTicketGapLines,
+    bool? printPoetry,
   }) {
     return PrinterConfig(
       deviceAddress:
@@ -124,6 +131,7 @@ class PrinterConfig {
           : this.kitchenPrinterAddress,
       printGapLines: printGapLines ?? this.printGapLines,
       printTicketGapLines: printTicketGapLines ?? this.printTicketGapLines,
+      printPoetry: printPoetry ?? this.printPoetry,
     );
   }
 
@@ -142,7 +150,8 @@ class PrinterConfig {
           customerPrinterAddress == other.customerPrinterAddress &&
           kitchenPrinterAddress == other.kitchenPrinterAddress &&
           printGapLines == other.printGapLines &&
-          printTicketGapLines == other.printTicketGapLines;
+          printTicketGapLines == other.printTicketGapLines &&
+          printPoetry == other.printPoetry;
 
   @override
   int get hashCode => Object.hash(
@@ -157,6 +166,7 @@ class PrinterConfig {
         kitchenPrinterAddress,
         printGapLines,
         printTicketGapLines,
+        printPoetry,
       );
 
   @override
@@ -168,7 +178,8 @@ class PrinterConfig {
         'customerPrinterAddress: $customerPrinterAddress, '
         'kitchenPrinterAddress: $kitchenPrinterAddress, '
         'printGapLines: $printGapLines, '
-        'printTicketGapLines: $printTicketGapLines)';
+        'printTicketGapLines: $printTicketGapLines, '
+        'printPoetry: $printPoetry)';
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/order.dart';
 import '../providers/printer_provider.dart';
+import '../services/poetry_service.dart';
 import '../utils/print_renderer.dart';
 import '../utils/preview_renderer.dart';
 import '../utils/preview_line.dart';
@@ -27,6 +28,7 @@ class PrintPreviewScreen extends StatefulWidget {
 
 class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
   late final PreviewRenderer _previewRenderer;
+  final PoetryService _poetryService = PoetryService();
   bool _isPrinting = false;
   bool _isInitialized = false;
 
@@ -41,12 +43,15 @@ class _PrintPreviewScreenState extends State<PrintPreviewScreen> {
     final provider = context.read<PrinterProvider>();
     final config = provider.config;
 
+    final poem = config.printPoetry ? _poetryService.getPoem(date: DateTime.now()) : null;
+
     final printData = PrintData(
       ticketNumber: widget.order.ticketNumber,
       dishName: widget.order.dishName,
       shopName: config.printShopName ? config.shopName : null,
       dateTime: config.printDateTime ? widget.order.createdAt : null,
       gapLines: config.printGapLines,
+      poetryText: poem?.text,
     );
 
     await _previewRenderer.render(printData);

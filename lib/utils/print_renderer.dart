@@ -20,6 +20,12 @@ class PrintData {
   /// 两联打印时，两张票之间的间距行数
   final int ticketGapLines;
 
+  /// 诗句（可选，不打印诗词时为 null）
+  final String? poetryText;
+
+  /// 诗句作者（可选）
+  final String? poetryAuthor;
+
   const PrintData({
     required this.ticketNumber,
     required this.dishName,
@@ -27,6 +33,8 @@ class PrintData {
     this.dateTime,
     this.gapLines = 0,
     this.ticketGapLines = 0,
+    this.poetryText,
+    this.poetryAuthor,
   });
 
   @override
@@ -39,15 +47,20 @@ class PrintData {
           shopName == other.shopName &&
           dateTime == other.dateTime &&
           gapLines == other.gapLines &&
-          ticketGapLines == other.ticketGapLines;
+          ticketGapLines == other.ticketGapLines &&
+          poetryText == other.poetryText &&
+          poetryAuthor == other.poetryAuthor;
 
   @override
-  int get hashCode => Object.hash(ticketNumber, dishName, shopName, dateTime, gapLines, ticketGapLines);
+  int get hashCode => Object.hash(ticketNumber, dishName, shopName, dateTime,
+      gapLines, ticketGapLines, poetryText, poetryAuthor);
 
   @override
   String toString() {
     return 'PrintData(ticketNumber: $ticketNumber, dishName: $dishName, '
-        'shopName: $shopName, dateTime: $dateTime, gapLines: $gapLines, ticketGapLines: $ticketGapLines)';
+        'shopName: $shopName, dateTime: $dateTime, gapLines: $gapLines, '
+        'ticketGapLines: $ticketGapLines, poetryText: $poetryText, '
+        'poetryAuthor: $poetryAuthor)';
   }
 }
 

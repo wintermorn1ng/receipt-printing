@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/order.dart';
 import '../models/printer_config.dart';
+import '../services/poetry_service.dart';
 import '../utils/print_renderer.dart';
 import '../utils/escpos_renderer.dart';
 
@@ -16,6 +17,7 @@ import '../utils/escpos_renderer.dart';
 class PrintService {
   PrintRenderer? _renderer;
   final ESCPOSRenderer _escposRenderer = ESCPOSRenderer();
+  final PoetryService _poetryService = PoetryService();
 
   /// 存储键名
   static const String _configKey = 'printer_config';
@@ -56,6 +58,9 @@ class PrintService {
   Future<void> printTicket(Order order, PrinterConfig config) async {
     _switchToEscposRenderer();
 
+    // 根据当前日期/节气选择诗词
+    final poem = config.printPoetry ? _poetryService.getPoem(date: DateTime.now()) : null;
+
     final printData = PrintData(
       ticketNumber: order.ticketNumber,
       dishName: order.dishName,
@@ -63,6 +68,7 @@ class PrintService {
       dateTime: config.printDateTime ? order.createdAt : null,
       gapLines: config.printGapLines,
       ticketGapLines: config.printTicketGapLines,
+      poetryText: poem?.text,
     );
 
     await renderer.render(printData);
@@ -72,6 +78,8 @@ class PrintService {
   Future<void> printTwoCopies(Order order, PrinterConfig config) async {
     _switchToEscposRenderer();
 
+    final poem = config.printPoetry ? _poetryService.getPoem(date: DateTime.now()) : null;
+
     final printData = PrintData(
       ticketNumber: order.ticketNumber,
       dishName: order.dishName,
@@ -79,6 +87,7 @@ class PrintService {
       dateTime: config.printDateTime ? order.createdAt : null,
       gapLines: config.printGapLines,
       ticketGapLines: config.printTicketGapLines,
+      poetryText: poem?.text,
     );
 
     await renderer.renderTwoCopies(printData);

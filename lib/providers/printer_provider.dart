@@ -214,6 +214,13 @@ class PrinterProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 切换打印诗词
+  Future<void> togglePrintPoetry(bool value) async {
+    _config = _config.copyWith(printPoetry: value);
+    await _printService.savePrinterConfig(_config);
+    notifyListeners();
+  }
+
   /// 更新打印间距行数
   Future<void> updatePrintGapLines(int lines) async {
     _config = _config.copyWith(printGapLines: lines);

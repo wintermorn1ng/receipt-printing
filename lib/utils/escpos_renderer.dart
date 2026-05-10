@@ -109,6 +109,8 @@ class ESCPOSRenderer implements PrintRenderer {
         printDateTime: data.dateTime != null,
         dateTime: data.dateTime,
         gapLines: data.gapLines,
+        poetryText: data.poetryText,
+        poetryAuthor: data.poetryAuthor,
       );
 
       final dataToSend = Uint8List.fromList(bytes);

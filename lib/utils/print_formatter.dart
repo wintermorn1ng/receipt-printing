@@ -76,6 +76,8 @@ class PrintFormatter {
   /// [printDateTime] 是否打印日期时间
   /// [dateTime] 指定日期时间（可选，默认使用当前时间）
   /// [gapLines] 切纸前进纸行数（留白），默认 0
+  /// [poetryText] 诗句正文（可选）
+  /// [poetryAuthor] 诗句作者（可选）
   Future<List<int>> formatTicket({
     required int ticketNumber,
     required String dishName,
@@ -83,6 +85,8 @@ class PrintFormatter {
     bool printDateTime = false,
     DateTime? dateTime,
     int gapLines = 0,
+    String? poetryText,
+    String? poetryAuthor,
   }) async {
     final List<int> bytes = [];
 
@@ -133,6 +137,19 @@ class PrintFormatter {
     }
 
     bytes.addAll(lineFeed());
+    // 诗句
+    if (poetryText != null && poetryText.isNotEmpty) {
+      // 分隔线
+      bytes.addAll(alignCenter());
+      bytes.addAll(await _encodeGbk('-' * 20));
+      bytes.addAll(lineFeed());
+      // 诗句正文（小字体居中）
+      bytes.addAll(alignCenter());
+      bytes.addAll(normalFont());
+      bytes.addAll(await _encodeGbk(poetryText));
+      bytes.addAll(lineFeed());
+      bytes.addAll(lineFeed());
+    }
     // 进纸留白（切纸前空白）
     if (gapLines > 0) {
       bytes.addAll(feedLines(gapLines));

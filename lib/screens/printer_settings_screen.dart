@@ -340,6 +340,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
             onChanged: (value) => provider.togglePrintTwoCopies(value),
           ),
           const Divider(),
+          SwitchListTile(
+            title: const Text('打印诗词'),
+            subtitle: const Text('小票末尾打印一句古诗词'),
+            value: provider.config.printPoetry,
+            onChanged: (value) => provider.togglePrintPoetry(value),
+          ),
+          const Divider(),
           ListTile(
             title: const Text('切纸前进纸行数'),
             subtitle: Text(
