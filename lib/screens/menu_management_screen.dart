@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:receipt_printing/database/dish_dao.dart';
 import 'package:receipt_printing/providers/menu_provider.dart';
@@ -81,6 +82,17 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
       appBar: AppBar(
         title: const Text('菜单管理'),
         actions: [
+          // 导出按钮
+          Consumer<MenuProvider>(
+            builder: (context, menuProvider, child) {
+              if (menuProvider.dishes.isEmpty) return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.copy),
+                tooltip: '复制菜名',
+                onPressed: () => _exportDishNames(menuProvider.dishes),
+              );
+            },
+          ),
           // 排序/完成按钮
           TextButton.icon(
             onPressed: () {
@@ -500,6 +512,20 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
         );
       },
     );
+  }
+
+  /// 导出所有菜名到剪贴板（逗号分隔）
+  Future<void> _exportDishNames(List<Dish> dishes) async {
+    final names = dishes.map((d) => d.name).join('，');
+    await Clipboard.setData(ClipboardData(text: names));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已复制 ${dishes.length} 个菜名'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   /// 删除菜品
