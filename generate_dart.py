@@ -93,11 +93,15 @@ for p in deduped:
 dart_lines.append("];")
 dart_lines.append("")
 dart_lines.append("const List<ClassicalPoetry> allPoems = [")
+def esc(s):
+    """Escape single quotes for Dart single-quoted strings."""
+    return s.replace("'", "\\'")
+
 for p in deduped:
     tags_str = "[" + ", ".join(f"'{t}'" for t in p['tags']) + "]"
     dart_lines.append(
-        f"  ClassicalPoetry(text: '{p['text']}', author: '{p['author']}', "
-        f"title: '{p['title']}', tags: {tags_str}),"
+        f"  ClassicalPoetry(text: '{esc(p['text'])}', author: '{esc(p['author'])}', "
+        f"title: '{esc(p['title'])}', tags: {tags_str}),"
     )
 dart_lines.append("];")
 dart_lines.append("")
@@ -110,8 +114,8 @@ for tag in tag_order:
         for p in by_tag[tag]:
             tags_str = "[" + ", ".join(f"'{t}'" for t in p['tags']) + "]"
             dart_lines.append(
-                f"  ClassicalPoetry(text: '{p['text']}', author: '{p['author']}', "
-                f"title: '{p['title']}', tags: {tags_str}),"
+                f"  ClassicalPoetry(text: '{esc(p['text'])}', author: '{esc(p['author'])}', "
+                f"title: '{esc(p['title'])}', tags: {tags_str}),"
             )
         dart_lines.append("];")
         dart_lines.append("")
