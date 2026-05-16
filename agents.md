@@ -4,49 +4,46 @@ This document defines agent behavior and workflows for this project.
 
 ## Changelog Update Rule
 
-**Whenever code changes are made (code modifications, refactoring, bug fixes, new features, etc.), the agent MUST同步 update CHANGELOG.md at the same time.**
+**Whenever code changes are made (code modifications, refactoring, bug fixes, new features, etc.), the agent MUST 同步 update CHANGELOG.md at the same time.**
 
-### Changelog Entry Format
+### How to Update
 
-Each entry should follow this format:
+**直接追加到当前最新版本下，不要新建版本号。** 找到 CHANGELOG.md 中最新的 `## [x.y.z] - YYYY-MM-DD` 版本条目，将本次改动追加到对应的 `### Added` / `### Changed` / `### Fixed` 分类下。
 
 ```markdown
-## [version] - YYYY-MM-DD
+## [1.0.1] - 2026-05-16
 
 ### Added
-- 新功能描述
-
-### Changed
-- 已有功能的变更
+- feat: 已有功能A
+- feat: 本次新增的功能B    ← 直接加在这里
 
 ### Fixed
-- bug 修复描述
+- fix: 已有修复X
+- fix: 本次修复的问题Y    ← 直接加在这里
 ```
 
 ### When to Update
 
 - After completing any code change (feature, fix, refactor)
-- After any PR merge
-- Before building/releasing a new version
-
-### Version Numbering
-
-- Patch version (`x.y.Z`): Bug fixes, small changes
-- Minor version (`x.Y.0`): New features, backward compatible
-- Major version (`X.0.0`): Breaking changes
+- Before committing
 
 ### Example
 
-Before: `## [1.2.0] - 2026-05-16`
-
+Before:
 ```markdown
-## [1.2.0] - 2026-05-16
+## [1.0.1] - 2026-05-16
 
 ### Added
-- feat: 新增 xxx 功能
+- feat: 支持调整网格列数
+```
 
-### Fixed
-- fix: 修复了 xxx 问题
+After (add new item under same version):
+```markdown
+## [1.0.1] - 2026-05-16
+
+### Added
+- feat: 支持调整网格列数
+- feat: 新增 xxx 功能
 ```
 
 ## Code Modification Workflow
