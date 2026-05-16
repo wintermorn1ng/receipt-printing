@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2026-05-16
 
 ### Added
+- feat: 菜单管理页面新增导出按钮，点击可将所有菜名复制到剪贴板（中文逗号分隔）
 - feat: 菜单管理页面支持上下箭头按钮调整菜品顺序，替换拖拽排序为更简单的上移/下移按钮
 - feat: 支持调整点单页面菜品网格列数（默认2列，可切换为3列/4列），偏好通过 SharedPreferences 持久化
 - feat: 菜单项支持缩写设置，默认为菜单名第一个字，可自定义
@@ -29,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `ESCPOSRenderer.connect()` / `disconnect()` 标记为 `@Deprecated`，委托给 `BluetoothConnectionManager`
+- ci: 添加 GitHub Actions 构建 APK 工作流（`.github/workflows/build-apk.yml`）
 
 ## [1.0.0] - 2026-05-16
 
