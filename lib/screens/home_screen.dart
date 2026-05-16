@@ -11,6 +11,7 @@ import 'package:receipt_printing/screens/print_preview_screen.dart';
 import 'package:receipt_printing/screens/printer_settings_screen.dart';
 import 'package:receipt_printing/widgets/dish_grid_item.dart';
 import 'package:receipt_printing/widgets/ticket_number_display.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 点单首页
 ///
@@ -24,6 +25,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  int _gridColumns = 2;
+  static const _gridColumnsKey = 'grid_columns';
 
   @override
   void initState() {
@@ -31,7 +34,22 @@ class _HomeScreenState extends State<HomeScreen> {
     // 初始化数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
+      _loadGridColumns();
     });
+  }
+
+  Future<void> _loadGridColumns() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt(_gridColumnsKey);
+    if (saved != null && saved >= 2 && saved <= 4) {
+      setState(() => _gridColumns = saved);
+    }
+  }
+
+  Future<void> _setGridColumns(int columns) async {
+    setState(() => _gridColumns = columns);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_gridColumnsKey, columns);
   }
 
   Future<void> _initializeData() async {
@@ -96,6 +114,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   onSetNumber: (number) => _handleSetNumber(orderProvider, number),
                 ),
               );
+            },
+          ),
+          // 网格列数切换
+          IconButton(
+            icon: Icon(_gridColumns == 2
+                ? Icons.grid_view_rounded
+                : _gridColumns == 3
+                    ? Icons.view_column_rounded
+                    : Icons.apps_rounded),
+            tooltip: '列数: $_gridColumns (点击切换)',
+            onPressed: () {
+              final next = _gridColumns >= 4 ? 2 : _gridColumns + 1;
+              _setGridColumns(next);
             },
           ),
         ],
@@ -172,8 +203,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDishGrid(List<Dish> dishes, OrderProvider orderProvider) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 根据屏幕宽度计算列数
-        final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+        // 使用用户设置的列数
+        final crossAxisCount = _gridColumns;
         // 计算卡片高度，确保最小高度为 100dp
         final itemHeight = constraints.maxWidth > 600 ? 140.0 : 120.0;
         final itemWidth = (constraints.maxWidth - 32 - (crossAxisCount - 1) * 12) / crossAxisCount;
