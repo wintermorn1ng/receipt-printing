@@ -47,11 +47,12 @@ class MenuProvider extends ChangeNotifier {
     required String name,
     double? price,
     String? imagePath,
+    String? abbreviation,
   }) async {
     _clearError();
 
     try {
-      final dish = await _menuService.addDish(name, price, imagePath);
+      final dish = await _menuService.addDish(name, price, imagePath, abbreviation);
       _dishes.add(dish);
       notifyListeners();
     } catch (e) {

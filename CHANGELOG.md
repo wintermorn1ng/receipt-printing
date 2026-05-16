@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - feat: 菜单管理页面支持上下箭头按钮调整菜品顺序，替换拖拽排序为更简单的上移/下移按钮
 - feat: 支持调整点单页面菜品网格列数（默认2列，可切换为3列/4列），偏好通过 SharedPreferences 持久化
+- feat: 菜单项支持缩写设置，默认为菜单名第一个字，可自定义
+  - Dish 模型新增 `abbreviation` 字段和 `effectiveAbbreviation` getter
+  - 数据库 dishes 表新增 `abbreviation` 列，版本升至 2
+  - 编辑页面新增缩写输入框（最多 4 字符，可选）
+  - 无图片时网格项显示缩写大字取代原来的图标占位
 
 ## [1.0.0] - 2026-05-16
 

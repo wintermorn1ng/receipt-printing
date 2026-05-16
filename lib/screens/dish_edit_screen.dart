@@ -27,6 +27,7 @@ class _DishEditScreenState extends State<DishEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
+  final _abbreviationController = TextEditingController();
   String? _imagePath;
   bool _isSaving = false;
 
@@ -44,6 +45,7 @@ class _DishEditScreenState extends State<DishEditScreen> {
             ? price.toInt().toString()
             : price.toString();
       }
+      _abbreviationController.text = widget.dish!.abbreviation ?? '';
       _imagePath = widget.dish!.imagePath;
     }
   }
@@ -52,6 +54,7 @@ class _DishEditScreenState extends State<DishEditScreen> {
   void dispose() {
     _nameController.dispose();
     _priceController.dispose();
+    _abbreviationController.dispose();
     super.dispose();
   }
 
@@ -74,6 +77,9 @@ class _DishEditScreenState extends State<DishEditScreen> {
             const SizedBox(height: 16),
             // 价格输入
             _buildPriceField(),
+            const SizedBox(height: 16),
+            // 缩写输入
+            _buildAbbreviationField(),
             const SizedBox(height: 32),
             // 保存按钮
             _buildSaveButton(),
@@ -177,6 +183,23 @@ class _DishEditScreenState extends State<DishEditScreen> {
     );
   }
 
+  /// 构建缩写输入字段
+  Widget _buildAbbreviationField() {
+    return TextFormField(
+      controller: _abbreviationController,
+      decoration: InputDecoration(
+        labelText: '缩写（可选）',
+        hintText: '默认取菜单名第一个字，如"牛"',
+        prefixIcon: const Icon(Icons.text_fields),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      maxLength: 4,
+      textInputAction: TextInputAction.done,
+    );
+  }
+
   /// 构建保存按钮
   Widget _buildSaveButton() {
     return ElevatedButton.icon(
@@ -232,6 +255,8 @@ class _DishEditScreenState extends State<DishEditScreen> {
       final name = _nameController.text.trim();
       final priceText = _priceController.text.trim();
       final price = priceText.isEmpty ? null : double.parse(priceText);
+      final abbreviationText = _abbreviationController.text.trim();
+      final abbreviation = abbreviationText.isEmpty ? null : abbreviationText;
 
       final menuProvider = context.read<MenuProvider>();
 
@@ -241,6 +266,7 @@ class _DishEditScreenState extends State<DishEditScreen> {
           name: name,
           price: Value(price),
           imagePath: Value(_imagePath),
+          abbreviation: Value(abbreviation),
         );
         await menuProvider.updateDish(updatedDish);
       } else {
@@ -249,6 +275,7 @@ class _DishEditScreenState extends State<DishEditScreen> {
           name: name,
           price: price,
           imagePath: _imagePath,
+          abbreviation: abbreviation,
         );
       }
 

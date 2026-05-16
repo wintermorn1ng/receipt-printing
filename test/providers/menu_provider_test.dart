@@ -25,7 +25,7 @@ class MockMenuService implements MenuService {
   }
 
   @override
-  Future<Dish> addDish(String name, double? price, String? imagePath) async {
+  Future<Dish> addDish(String name, double? price, String? imagePath, [String? abbreviation]) async {
     if (name.trim().isEmpty) {
       throw ArgumentError('菜品名称不能为空');
     }
@@ -35,6 +35,7 @@ class MockMenuService implements MenuService {
       name: name.trim(),
       price: price,
       imagePath: imagePath,
+      abbreviation: abbreviation,
       createdAt: now,
       updatedAt: now,
     );
