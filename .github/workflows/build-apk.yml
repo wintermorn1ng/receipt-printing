@@ -1,0 +1,64 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      build-mode:
+        description: '构建模式'
+        required: false
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+
+      - name: Remove local proxy settings for CI
+        run: |
+          sed -i '/proxyHost/d' android/gradle.properties
+          sed -i '/proxyPort/d' android/gradle.properties
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build APK
+        run: flutter build apk --${{ inputs.build-mode || 'release' }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt_printing-${{ inputs.build-mode || 'release' }}
+          path: build/app/outputs/flutter-apk/app-${{ inputs.build-mode || 'release' }}.apk
+          retention-days: 30
