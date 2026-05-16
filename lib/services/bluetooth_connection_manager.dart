@@ -73,6 +73,8 @@ class BluetoothConnectionManager {
   static const Duration _initialRetryDelay = Duration(seconds: 1);
   static const Duration _maxRetryDelay = Duration(seconds: 30);
   static const int _maxRetryAttempts = 5;
+  static const Duration _connectTimeout = Duration(seconds: 8);
+  static const Duration _scanTimeout = Duration(seconds: 5);
 
   // ── 状态 ──
 
@@ -84,7 +86,18 @@ class BluetoothConnectionManager {
   final _stateController =
       StreamController<BluetoothConnectionEvent>.broadcast();
   Timer? _retryTimer;
+
+  /// 重试计数器（单次连接会话内的连续失败次数，成功或取消时重置）
   int _retryAttempt = 0;
+
+  /// 取消令牌：外部调用 cancel 时置 true，_connectWithRetry 检测到后退出循环
+  bool _cancelled = false;
+
+  /// 连接锁：确保同一时间只有一个连接操作在进行
+  bool _connectLocked = false;
+
+  /// 连接完成句柄：并发调用者通过它等待正在进行的连接操作完成
+  Completer<void>? _connectCompleter;
 
   // ── 公开属性 ──
 
@@ -128,6 +141,7 @@ class BluetoothConnectionManager {
   }
 
   /// 保存蓝牙地址到持久化存储
+  /// 先写持久化，成功后再更新内存（保证一致性）
   Future<void> _saveAddress(String address, String? name) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_addressKey, address);
@@ -173,24 +187,24 @@ class BluetoothConnectionManager {
   Future<void> configureAddress(String address, {String? name}) async {
     _log('configureAddress: address=$address, name=$name');
 
-    // 取消正在进行的重试
-    _cancelRetry();
+    // 取消正在进行的连接操作
+    _cancelCurrentOperation();
 
-    // 保存新地址
+    // 保存新地址（持久化优先）
     await _saveAddress(address, name);
 
-    // 开始连接
+    // 开始连接（内部处理锁等待）
     await _connectWithRetry(address);
   }
 
   /// 确保已连接，如果断开则用保存的地址重连
   ///
   /// 用于打印前的保活检查。
-  /// 如果当前已是 connected 状态，直接返回成功。
-  /// 如果没有保存的地址，抛出异常。
+  /// 保证返回时连接已建立，或已耗尽所有重试（抛出异常）。
   Future<void> ensureConnected() async {
     _log('ensureConnected: 当前状态=$state');
 
+    // 已连接，直接返回
     if (_state == BluetoothConnectionState.connected) {
       _log('ensureConnected: 已连接，直接返回');
       return;
@@ -203,23 +217,22 @@ class BluetoothConnectionManager {
       );
     }
 
-    if (_state == BluetoothConnectionState.connecting) {
-      _log('ensureConnected: 正在连接中，等待...');
-      // 等待连接完成
-      await for (final event in stateStream) {
-        if (event.state == BluetoothConnectionState.connected) {
+    // 如果有连接操作正在进行，等待它完成
+    if (_connectLocked) {
+      _log('ensureConnected: 连接操作进行中，等待完成...');
+      try {
+        await _connectCompleter!.future;
+        // 等待的操作成功了
+        if (_state == BluetoothConnectionState.connected) {
           return;
         }
-        if (event.state == BluetoothConnectionState.connectionError) {
-          throw const PrintException(
-            PrintErrorType.printerNotConnected,
-            '打印机连接失败',
-          );
-        }
+      } catch (_) {
+        // 等待的操作失败了，继续往下走，发起新的连接
+        _log('ensureConnected: 等待的连接操作失败，发起新连接');
       }
     }
 
-    // disconnected 或 connectionError，触发重连
+    // 发起连接（_connectWithRetry 内部管理锁和并发）
     await _connectWithRetry(_savedAddress!);
   }
 
@@ -227,7 +240,7 @@ class BluetoothConnectionManager {
   Future<void> disconnect() async {
     _log('disconnect: 主动断开');
 
-    _cancelRetry();
+    _cancelCurrentOperation();
 
     try {
       await BluetoothPrintPlus.disconnect();
@@ -242,7 +255,7 @@ class BluetoothConnectionManager {
   Future<void> clearSavedAddress() async {
     _log('clearSavedAddress: 清除保存的地址');
 
-    _cancelRetry();
+    _cancelCurrentOperation();
 
     try {
       await BluetoothPrintPlus.disconnect();
@@ -258,8 +271,21 @@ class BluetoothConnectionManager {
   Future<List<BluetoothDevice>> scanDevices({
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    final devices = await BluetoothPrintPlus.startScan(timeout: timeout) as List<BluetoothDevice>;
+    final devices = await BluetoothPrintPlus.startScan(timeout: timeout)
+        as List<BluetoothDevice>;
     return devices.where((d) => d.address.isNotEmpty).toList();
+  }
+
+  // ── 内部连接逻辑 ──
+
+  /// 取消当前正在进行的连接操作（Timer 延迟 + 取消令牌）
+  void _cancelCurrentOperation() {
+    _cancelled = true;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    // 注意：不重置 _retryAttempt。
+    // _retryAttempt 在 _connectWithRetry 开始时重置，语义上属于单次连接会话。
+    // 如果外部取消后又启动新会话，_connectWithRetry 会自己重置。
   }
 
   /// 通过地址连接设备（已知地址，直接连接，不扫描）
@@ -283,7 +309,7 @@ class BluetoothConnectionManager {
     // 有些蓝牙模块需要先 discovery 才能建立连接
     try {
       final devices = await BluetoothPrintPlus.startScan(
-        timeout: const Duration(seconds: 5),
+        timeout: _scanTimeout,
       );
 
       BluetoothDevice? target;
@@ -295,49 +321,151 @@ class BluetoothConnectionManager {
       }
 
       if (target == null) {
-        _log('_connectDirect: 在 5s 扫描中未找到目标设备');
+        _log('_connectDirect: 在 ${_scanTimeout.inSeconds}s 扫描中未找到目标设备');
         return false;
       }
 
       _lastKnownDevice = target;
-      await BluetoothPrintPlus.connect(target);
+
+      // 带超时的连接
+      await BluetoothPrintPlus.connect(target).timeout(
+        _connectTimeout,
+        onTimeout: () {
+          _log('_connectDirect: 连接超时 (${_connectTimeout.inSeconds}s)');
+          // 尝试清理
+          try {
+            BluetoothPrintPlus.disconnect();
+          } catch (_) {}
+          throw TimeoutException(
+            '蓝牙连接超时 (${_connectTimeout.inSeconds}s)',
+            _connectTimeout,
+          );
+        },
+      );
+
       await Future.delayed(const Duration(milliseconds: 500));
 
       _log('_connectDirect: 连接成功，isConnected=${BluetoothPrintPlus.isConnected}');
       return BluetoothPrintPlus.isConnected;
+    } on TimeoutException {
+      _log('_connectDirect: 连接超时');
+      return false;
     } catch (e) {
       _log('_connectDirect: 连接失败: $e');
       return false;
     }
   }
 
-  /// 带重试的连接
+  /// 带重试的连接（阻塞直到成功或耗尽所有重试）
+  ///
+  /// 内部管理连接锁：同一时间只有一个 _connectWithRetry 运行。
+  /// 新的调用会先等待上一个完成（通过 _connectCompleter）。
   Future<void> _connectWithRetry(String address) async {
     _log('_connectWithRetry: address=$address');
 
-    _cancelRetry();
-
-    if (_state == BluetoothConnectionState.connecting) {
-      _log('_connectWithRetry: 已在 connecting 状态');
-      return;
+    // 等待正在进行中的连接操作
+    if (_connectLocked) {
+      _log('_connectWithRetry: 已有连接操作在进行，等待完成...');
+      try {
+        await _connectCompleter!.future;
+      } catch (_) {
+        // 上一个操作失败，继续
+      }
     }
 
-    _emit(BluetoothConnectionState.connecting, address: address,
-        message: '开始连接');
+    // 获取锁
+    _connectLocked = true;
+    _connectCompleter = Completer<void>();
+    _cancelled = false;
     _retryAttempt = 0;
 
-    final success = await _attemptConnect(address);
+    try {
+      _emit(BluetoothConnectionState.connecting, address: address,
+          message: '开始连接');
 
-    if (success) {
-      _retryAttempt = 0;
-      _emit(BluetoothConnectionState.connected, address: address,
-          message: '连接成功');
-    } else {
-      _scheduleRetry(address);
+      while (!_cancelled) {
+        final success = await _attemptConnect(address);
+
+        if (success) {
+          _retryAttempt = 0;
+          _emit(BluetoothConnectionState.connected, address: address,
+              message: '连接成功');
+          _connectCompleter!.complete();
+          return;
+        }
+
+        _retryAttempt++;
+
+        if (_retryAttempt > _maxRetryAttempts) {
+          _emit(BluetoothConnectionState.connectionError,
+              address: address,
+              message: '连接失败，已达最大重试次数 $_maxRetryAttempts');
+          final ex = const PrintException(
+            PrintErrorType.printerNotConnected,
+            '无法连接到打印机，已达最大重试次数',
+          );
+          _connectCompleter!.completeError(ex);
+          throw ex;
+        }
+
+        // 计算退避延迟
+        final delay = _computeRetryDelay(_retryAttempt);
+        _emit(BluetoothConnectionState.connectionError,
+            address: address,
+            message: '连接失败，${delay.inSeconds}s 后第 $_retryAttempt 次重试');
+
+        // 可取消的延迟等待
+        await _cancellableDelay(delay);
+
+        if (_cancelled) {
+          _log('_connectWithRetry: 连接已取消');
+          final ex = const PrintException(
+            PrintErrorType.printerNotConnected,
+            '连接已取消',
+          );
+          _connectCompleter!.completeError(ex);
+          throw ex;
+        }
+      }
+
+      // _cancelled 为 true 但循环条件未触发（边缘情况）
+      final ex = const PrintException(
+        PrintErrorType.printerNotConnected,
+        '连接已取消',
+      );
+      _connectCompleter!.completeError(ex);
+      throw ex;
+    } catch (e) {
+      // 如果 completer 尚未完成（非正常路径的异常），完成它
+      if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+        _connectCompleter!.completeError(e);
+      }
+      rethrow;
+    } finally {
+      _connectLocked = false;
+      _connectCompleter = null;
     }
   }
 
-  /// 单次连接尝试
+  /// 计算退避延迟：1s, 2s, 4s, 8s, 16s, 上限 30s
+  Duration _computeRetryDelay(int attempt) {
+    // attempt 从 1 开始，所以 shift amount = attempt - 1
+    final delay = _initialRetryDelay * (1 << (attempt - 1));
+    return delay > _maxRetryDelay ? _maxRetryDelay : delay;
+  }
+
+  /// 可被 _cancelCurrentOperation 中断的延迟等待
+  Future<void> _cancellableDelay(Duration delay) async {
+    final completer = Completer<void>();
+    _retryTimer = Timer(delay, () {
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+    await completer.future;
+  }
+
+  /// 单次连接尝试（包异常处理）
   Future<bool> _attemptConnect(String address) async {
     _log('_attemptConnect: address=$address, attempt=${_retryAttempt + 1}');
 
@@ -356,52 +484,9 @@ class BluetoothConnectionManager {
     }
   }
 
-  /// 调度重试（带退避）
-  void _scheduleRetry(String address) {
-    if (_retryAttempt >= _maxRetryAttempts) {
-      _log('_scheduleRetry: 已达最大重试次数 $_maxRetryAttempts，停止重试');
-      _emit(BluetoothConnectionState.connectionError,
-          address: address,
-          message: '连接失败，已停止重试');
-      return;
-    }
-
-    // 计算退避延迟
-    final delay = _initialRetryDelay * (1 << _retryAttempt);
-    final actualDelay = delay > _maxRetryDelay ? _maxRetryDelay : delay;
-
-    _log('_scheduleRetry: ${_retryAttempt + 1} 次尝试失败，'
-        '${actualDelay.inSeconds}s 后重试...');
-
-    _retryAttempt++;
-
-    _emit(BluetoothConnectionState.connectionError,
-        address: address,
-        message: '连接失败，${actualDelay.inSeconds}s 后重试');
-
-    _retryTimer = Timer(actualDelay, () {
-      _log('_scheduleRetry: Timer 触发，开始重试');
-      _attemptConnect(address).then((success) {
-        if (success) {
-          _retryAttempt = 0;
-          _emit(BluetoothConnectionState.connected,
-              address: address, message: '连接成功（重试后）');
-        } else {
-          _scheduleRetry(address);
-        }
-      });
-    });
-  }
-
-  void _cancelRetry() {
-    _retryTimer?.cancel();
-    _retryTimer = null;
-    _retryAttempt = 0;
-  }
-
   /// 释放资源
   void dispose() {
-    _cancelRetry();
+    _cancelCurrentOperation();
     _stateController.close();
   }
 }

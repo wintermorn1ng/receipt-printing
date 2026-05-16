@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 数据库 dishes 表新增 `abbreviation` 列，版本升至 2
   - 编辑页面新增缩写输入框（最多 4 字符，可选）
   - 无图片时网格项显示缩写大字取代原来的图标占位
+- feat: App 从后台恢复时自动尝试蓝牙重连（`WidgetsBindingObserver`）
+
+### Fixed
+- fix: 蓝牙连接管理器重构，修复 6 个稳定性问题
+  - `ensureConnected()` 现在保证返回时连接已建立或所有重试耗尽（不再提前返回假成功）
+  - 添加并发连接锁，防止多个 `ensureConnected()` 调用产生竞态
+  - `_connectDirect` 添加 8 秒超时保护，防止蓝牙栈挂起
+  - `_saveAddress` 先写 SharedPreferences 再更新内存，保证一致性
+  - `_cancelRetry` 不再重置重试计数，退避策略保持连续性
+  - 重试循环从递归 Timer 改为 `_connectWithRetry` 内部 while 循环，逻辑更清晰
+- fix: `renderTwoCopies` 在第一联打印后验证连接状态，防止半截打印
+
+### Changed
+- `ESCPOSRenderer.connect()` / `disconnect()` 标记为 `@Deprecated`，委托给 `BluetoothConnectionManager`
 
 ## [1.0.0] - 2026-05-16
 
