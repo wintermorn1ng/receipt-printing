@@ -38,6 +38,26 @@ class MockMenuService implements MenuService {
   }
 
   @override
+  Future<List<Dish>> addDishes(List<String> names, double? price) async {
+    final now = DateTime.now();
+    final added = <Dish>[];
+    for (final name in names) {
+      final trimmed = name.trim();
+      if (trimmed.isEmpty) continue;
+      final dish = Dish(
+        id: _nextId++,
+        name: trimmed,
+        price: price,
+        createdAt: now,
+        updatedAt: now,
+      );
+      _dishes.add(dish);
+      added.add(dish);
+    }
+    return added;
+  }
+
+  @override
   Future<void> updateDish(Dish dish) async {
     final index = _dishes.indexWhere((d) => d.id == dish.id);
     if (index != -1) {

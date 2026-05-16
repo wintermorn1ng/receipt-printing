@@ -91,7 +91,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
             icon: Icon(_isEditMode ? Icons.check : Icons.sort),
             label: Text(_isEditMode ? '完成' : '排序'),
             style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              foregroundColor: Colors.black87,
             ),
           ),
         ],
@@ -116,7 +116,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                 }
 
                 return _isEditMode
-                    ? _buildReorderableGrid(dishes)
+                    ? _buildEditableGrid(dishes)
                     : _buildNormalGrid(dishes);
               },
             ),
@@ -358,14 +358,15 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
     );
   }
 
-  /// 构建可重排网格（编辑模式）
-  Widget _buildReorderableGrid(List<Dish> dishes) {
+  /// 构建可编辑网格（带上下移动按钮）
+  Widget _buildEditableGrid(List<Dish> dishes) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
         final aspectRatio = constraints.maxWidth > 600 ? 1.0 : 0.85;
+        final theme = Theme.of(context);
 
-        return ReorderableGridView.builder(
+        return GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
@@ -376,33 +377,67 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           itemCount: dishes.length,
           itemBuilder: (context, index) {
             final dish = dishes[index];
-            return DishGridItem(
-              key: ValueKey(dish.id),
-              dish: dish,
-              isDragging: false,
-            );
-          },
-          onReorder: (oldIndex, newIndex) {
-            context.read<MenuProvider>().reorderDishes(
-                  oldIndex: oldIndex,
-                  newIndex: newIndex,
-                );
-          },
-          proxyDecorator: (child, index, animation) {
-            return AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) {
-                return Material(
-                  elevation: 8 * animation.value,
-                  borderRadius: BorderRadius.circular(12),
-                  child: child,
-                );
-              },
-              child: child,
+            final isFirst = index == 0;
+            final isLast = index == dishes.length - 1;
+
+            return Stack(
+              children: [
+                // 菜品卡片（编辑模式下禁用点击/长按）
+                DishGridItem(
+                  dish: dish,
+                ),
+                // 上移按钮（第一个不显示）
+                if (!isFirst)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: _buildArrowButton(
+                      icon: Icons.keyboard_arrow_up,
+                      color: theme.colorScheme.primary,
+                      onTap: () {
+                        context.read<MenuProvider>().moveDishUp(index);
+                      },
+                    ),
+                  ),
+                // 下移按钮（最后一个不显示）
+                if (!isLast)
+                  Positioned(
+                    bottom: 4,
+                    right: 4,
+                    child: _buildArrowButton(
+                      icon: Icons.keyboard_arrow_down,
+                      color: theme.colorScheme.primary,
+                      onTap: () {
+                        context.read<MenuProvider>().moveDishDown(index);
+                      },
+                    ),
+                  ),
+              ],
             );
           },
         );
       },
+    );
+  }
+
+  /// 构建箭头按钮
+  Widget _buildArrowButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.85),
+      shape: const CircleBorder(),
+      elevation: 2,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Icon(icon, color: color, size: 22),
+        ),
+      ),
     );
   }
 
@@ -499,50 +534,5 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
         const SnackBar(content: Text('菜品已更新')),
       );
     }
-  }
-}
-
-/// 可重排的网格视图
-///
-/// 包装 Flutter 的 ReorderableListView 实现网格拖拽排序
-class ReorderableGridView extends StatelessWidget {
-  final int itemCount;
-  final IndexedWidgetBuilder itemBuilder;
-  final ReorderCallback onReorder;
-  final SliverGridDelegate gridDelegate;
-  final EdgeInsetsGeometry? padding;
-  final ReorderItemProxyDecorator? proxyDecorator;
-
-  const ReorderableGridView.builder({
-    super.key,
-    required this.itemCount,
-    required this.itemBuilder,
-    required this.onReorder,
-    required this.gridDelegate,
-    this.padding,
-    this.proxyDecorator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: padding ?? EdgeInsets.zero,
-          sliver: SliverGrid(
-            gridDelegate: gridDelegate,
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return ReorderableDragStartListener(
-                  index: index,
-                  child: itemBuilder(context, index),
-                );
-              },
-              childCount: itemCount,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

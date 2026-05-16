@@ -54,14 +54,39 @@ class MockMenuService implements MenuService {
   }
 
   @override
+  Future<List<Dish>> addDishes(List<String> names, double? price) async {
+    final now = DateTime.now();
+    final added = <Dish>[];
+    for (final name in names) {
+      final trimmed = name.trim();
+      if (trimmed.isEmpty) continue;
+      final dish = Dish(
+        id: _nextId++,
+        name: trimmed,
+        price: price,
+        createdAt: now,
+        updatedAt: now,
+      );
+      _dishes.add(dish);
+      added.add(dish);
+    }
+    return added;
+  }
+
+  @override
   Future<void> deleteDish(int id) async {
     _dishes.removeWhere((d) => d.id == id);
   }
 
   @override
   Future<void> reorderDishes(List<Dish> dishes) async {
-    // In real implementation this updates sort_order in database
-    // For mock, we just verify it's called with correct data
+    // Update internal list to match new order
+    final newOrder = <Dish>[];
+    for (final dish in dishes) {
+      final existing = _dishes.firstWhere((d) => d.id == dish.id);
+      newOrder.add(existing);
+    }
+    _dishes = newOrder;
   }
 }
 
@@ -184,8 +209,8 @@ void main() {
       });
     });
 
-    group('reorderDishes', () {
-      test('should reorder dishes and persist changes', () async {
+    group('moveDishUp', () {
+      test('should move dish up and persist changes', () async {
         // Arrange
         final dishes = [
           Dish(
@@ -208,21 +233,49 @@ void main() {
           ),
         ];
 
-        // Initialize provider with dishes
         mockMenuService.setDishes(dishes);
         await menuProvider.loadDishes();
 
-        // Act - move first item to last (oldIndex=0, newIndex=3)
-        // Note: In ReorderableListView, when moving to end, newIndex equals list length
-        await menuProvider.reorderDishes(oldIndex: 0, newIndex: 3);
+        // Act - move 炸酱面 (index 1) up
+        await menuProvider.moveDishUp(1);
 
         // Assert
         expect(menuProvider.dishes[0].name, '炸酱面');
-        expect(menuProvider.dishes[1].name, '豆浆');
-        expect(menuProvider.dishes[2].name, '牛肉面');
+        expect(menuProvider.dishes[1].name, '牛肉面');
+        expect(menuProvider.dishes[2].name, '豆浆');
       });
 
-      test('should handle reorder from higher to lower index', () async {
+      test('should not move first item up', () async {
+        // Arrange
+        final dishes = [
+          Dish(
+            id: 1,
+            name: '牛肉面',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          Dish(
+            id: 2,
+            name: '炸酱面',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        ];
+
+        mockMenuService.setDishes(dishes);
+        await menuProvider.loadDishes();
+
+        // Act - try to move first item up
+        await menuProvider.moveDishUp(0);
+
+        // Assert - order should remain unchanged
+        expect(menuProvider.dishes[0].name, '牛肉面');
+        expect(menuProvider.dishes[1].name, '炸酱面');
+      });
+    });
+
+    group('moveDishDown', () {
+      test('should move dish down and persist changes', () async {
         // Arrange
         final dishes = [
           Dish(
@@ -248,13 +301,41 @@ void main() {
         mockMenuService.setDishes(dishes);
         await menuProvider.loadDishes();
 
-        // Act - move last item to first (oldIndex=2, newIndex=0)
-        await menuProvider.reorderDishes(oldIndex: 2, newIndex: 0);
+        // Act - move 炸酱面 (index 1) down
+        await menuProvider.moveDishDown(1);
 
         // Assert
-        expect(menuProvider.dishes[0].name, '豆浆');
-        expect(menuProvider.dishes[1].name, '牛肉面');
+        expect(menuProvider.dishes[0].name, '牛肉面');
+        expect(menuProvider.dishes[1].name, '豆浆');
         expect(menuProvider.dishes[2].name, '炸酱面');
+      });
+
+      test('should not move last item down', () async {
+        // Arrange
+        final dishes = [
+          Dish(
+            id: 1,
+            name: '牛肉面',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          Dish(
+            id: 2,
+            name: '炸酱面',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        ];
+
+        mockMenuService.setDishes(dishes);
+        await menuProvider.loadDishes();
+
+        // Act - try to move last item down
+        await menuProvider.moveDishDown(1);
+
+        // Assert - order should remain unchanged
+        expect(menuProvider.dishes[0].name, '牛肉面');
+        expect(menuProvider.dishes[1].name, '炸酱面');
       });
     });
   });
