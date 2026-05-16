@@ -18,7 +18,7 @@ class DatabaseRepositoryFactory {
         Platform.isWindows) {
       return SqfliteRepository(
         dbName: 'receipt_printing.db',
-        version: 1,
+        version: 2,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
@@ -34,7 +34,7 @@ class DatabaseRepositoryFactory {
   static DatabaseRepository createSqflite() {
     return SqfliteRepository(
       dbName: 'receipt_printing.db',
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -63,6 +63,7 @@ class DatabaseRepositoryFactory {
         name TEXT NOT NULL,
         price REAL,
         image_path TEXT,
+        abbreviation TEXT,
         sort_order INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
@@ -98,9 +99,8 @@ class DatabaseRepositoryFactory {
   /// 数据库升级
   static Future<void> _onUpgrade(
       sqflite.Database db, int oldVersion, int newVersion) async {
-    // 后续版本升级时在此处理
     if (oldVersion < 2) {
-      // 版本 1 升级到版本 2 的操作
+      await db.execute('ALTER TABLE dishes ADD COLUMN abbreviation TEXT');
     }
   }
 }

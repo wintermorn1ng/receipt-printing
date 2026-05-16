@@ -47,11 +47,12 @@ class MenuProvider extends ChangeNotifier {
     required String name,
     double? price,
     String? imagePath,
+    String? abbreviation,
   }) async {
     _clearError();
 
     try {
-      final dish = await _menuService.addDish(name, price, imagePath);
+      final dish = await _menuService.addDish(name, price, imagePath, abbreviation);
       _dishes.add(dish);
       notifyListeners();
     } catch (e) {
@@ -118,37 +119,39 @@ class MenuProvider extends ChangeNotifier {
     }
   }
 
-  /// 重新排序菜品
+  /// 上移菜品
   ///
-  /// [oldIndex] 原位置索引
-  /// [newIndex] 新位置索引
-  Future<void> reorderDishes({
-    required int oldIndex,
-    required int newIndex,
-  }) async {
-    if (oldIndex < 0 ||
-        oldIndex >= _dishes.length ||
-        newIndex < 0 ||
-        newIndex > _dishes.length) {
-      return;
-    }
+  /// 将指定索引的菜品与上一个交换位置
+  Future<void> moveDishUp(int index) async {
+    if (index <= 0 || index >= _dishes.length) return;
 
-    // ReorderableListView 的 newIndex 行为：
-    // - 向上移动（oldIndex > newIndex）：newIndex 就是目标位置
-    // - 向下移动（oldIndex < newIndex）：newIndex 已经考虑了移除元素的影响
-    // 所以我们需要调整：只有当向下移动时才减1
-    final adjustedNewIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
+    final item = _dishes.removeAt(index);
+    _dishes.insert(index - 1, item);
 
-    final item = _dishes.removeAt(oldIndex);
-    _dishes.insert(adjustedNewIndex, item);
-
-    // 更新数据库中的排序
     try {
       await _menuService.reorderDishes(_dishes);
       notifyListeners();
     } catch (e) {
-      _setError('更新排序失败: $e');
-      // 恢复原始顺序
+      _setError('上移失败: $e');
+      await loadDishes();
+      rethrow;
+    }
+  }
+
+  /// 下移菜品
+  ///
+  /// 将指定索引的菜品与下一个交换位置
+  Future<void> moveDishDown(int index) async {
+    if (index < 0 || index >= _dishes.length - 1) return;
+
+    final item = _dishes.removeAt(index);
+    _dishes.insert(index + 1, item);
+
+    try {
+      await _menuService.reorderDishes(_dishes);
+      notifyListeners();
+    } catch (e) {
+      _setError('下移失败: $e');
       await loadDishes();
       rethrow;
     }

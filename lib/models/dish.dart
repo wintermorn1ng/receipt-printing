@@ -9,6 +9,7 @@ class Dish {
   final String name; // 必填
   final double? price; // 可选
   final String? imagePath; // 可选
+  final String? abbreviation; // 缩写，默认取 name 第一个字
   final int sortOrder; // 排序，默认0
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -18,6 +19,7 @@ class Dish {
     required this.name,
     this.price,
     this.imagePath,
+    this.abbreviation,
     this.sortOrder = 0,
     required this.createdAt,
     required this.updatedAt,
@@ -32,6 +34,7 @@ class Dish {
       name: json['name'] as String,
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       imagePath: json['image_path'] as String?,
+      abbreviation: json['abbreviation'] as String?,
       sortOrder: json['sort_order'] as int? ?? 0,
       createdAt: DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(json['updated_at'] as int),
@@ -47,6 +50,7 @@ class Dish {
       'name': name,
       'price': price,
       'image_path': imagePath,
+      'abbreviation': abbreviation,
       'sort_order': sortOrder,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt.millisecondsSinceEpoch,
@@ -61,6 +65,7 @@ class Dish {
     String? name,
     Value<double?>? price,
     Value<String?>? imagePath,
+    Value<String?>? abbreviation,
     int? sortOrder,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -70,10 +75,22 @@ class Dish {
       name: name ?? this.name,
       price: price != null ? price.value : this.price,
       imagePath: imagePath != null ? imagePath.value : this.imagePath,
+      abbreviation: abbreviation != null ? abbreviation.value : this.abbreviation,
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  /// 获取有效缩写：如果设置了 abbreviation 则返回，否则返回 name 的第一个字
+  String get effectiveAbbreviation {
+    if (abbreviation != null && abbreviation!.isNotEmpty) {
+      return abbreviation!;
+    }
+    if (name.isNotEmpty) {
+      return String.fromCharCode(name.runes.first);
+    }
+    return '?';
   }
 
   @override
@@ -85,17 +102,19 @@ class Dish {
           name == other.name &&
           price == other.price &&
           imagePath == other.imagePath &&
+          abbreviation == other.abbreviation &&
           sortOrder == other.sortOrder &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt;
 
   @override
   int get hashCode =>
-      Object.hash(id, name, price, imagePath, sortOrder, createdAt, updatedAt);
+      Object.hash(id, name, price, imagePath, abbreviation, sortOrder, createdAt, updatedAt);
 
   @override
   String toString() {
     return 'Dish(id: $id, name: $name, price: $price, imagePath: $imagePath, '
+        'abbreviation: $abbreviation, '
         'sortOrder: $sortOrder, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }

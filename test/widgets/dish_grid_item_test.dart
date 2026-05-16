@@ -97,7 +97,7 @@ void main() {
       expect(find.text('¥3'), findsOneWidget);
     });
 
-    testWidgets('should show placeholder when no image', (WidgetTester tester) async {
+    testWidgets('should show abbreviation placeholder when no image', (WidgetTester tester) async {
       // Arrange
       final dish = Dish(
         id: 1,
@@ -115,8 +115,9 @@ void main() {
         ),
       );
 
-      // Assert
-      expect(find.byIcon(Icons.restaurant), findsOneWidget);
+      // Assert - should display first char of name as placeholder
+      expect(find.text('牛'), findsOneWidget);
+      expect(find.byIcon(Icons.restaurant), findsNothing);
     });
 
     testWidgets('should call onTap when tapped', (WidgetTester tester) async {

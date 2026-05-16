@@ -17,7 +17,7 @@ void main() {
   setUp(() async {
     db = await openDatabase(
       inMemoryDatabasePath,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE dishes (
@@ -25,6 +25,7 @@ void main() {
             name TEXT NOT NULL,
             price REAL,
             image_path TEXT,
+            abbreviation TEXT,
             sort_order INTEGER DEFAULT 0,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL

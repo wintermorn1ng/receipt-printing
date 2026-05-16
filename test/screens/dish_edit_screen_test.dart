@@ -19,12 +19,13 @@ class MockMenuService implements MenuService {
   Future<List<Dish>> getAllDishes() async => List.from(_dishes);
 
   @override
-  Future<Dish> addDish(String name, double? price, String? imagePath) async {
+  Future<Dish> addDish(String name, double? price, String? imagePath, [String? abbreviation]) async {
     final dish = Dish(
       id: _nextId++,
       name: name,
       price: price,
       imagePath: imagePath,
+      abbreviation: abbreviation,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -43,6 +44,26 @@ class MockMenuService implements MenuService {
   @override
   Future<void> deleteDish(int id) async {
     _dishes.removeWhere((d) => d.id == id);
+  }
+
+  @override
+  Future<List<Dish>> addDishes(List<String> names, double? price) async {
+    final now = DateTime.now();
+    final added = <Dish>[];
+    for (final name in names) {
+      final trimmed = name.trim();
+      if (trimmed.isEmpty) continue;
+      final dish = Dish(
+        id: _nextId++,
+        name: trimmed,
+        price: price,
+        createdAt: now,
+        updatedAt: now,
+      );
+      _dishes.add(dish);
+      added.add(dish);
+    }
+    return added;
   }
 
   @override
@@ -102,8 +123,8 @@ void main() {
         // Enter name
         await tester.enterText(find.byType(TextFormField).first, '新菜品');
 
-        // Enter price
-        await tester.enterText(find.byType(TextFormField).last, '15.5');
+        // Enter price (field index 1)
+        await tester.enterText(find.byType(TextFormField).at(1), '15.5');
 
         // Save
         await tester.tap(find.text('保存'));
@@ -161,7 +182,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget(dish: existingDish));
 
         // Integer prices should be shown without decimal
-        final priceField = find.byType(TextFormField).last;
+        // Price is at index 1 (after name, before abbreviation)
+        final priceField = find.byType(TextFormField).at(1);
         final TextFormField priceWidget = tester.widget(priceField);
         expect(priceWidget.controller?.text, '3');
       });
@@ -174,8 +196,8 @@ void main() {
         // Enter name
         await tester.enterText(find.byType(TextFormField).first, '测试菜品');
 
-        // Enter negative price
-        await tester.enterText(find.byType(TextFormField).last, '-10');
+        // Enter negative price (field index 1)
+        await tester.enterText(find.byType(TextFormField).at(1), '-10');
 
         // Try to save
         await tester.tap(find.text('保存'));
@@ -191,8 +213,8 @@ void main() {
         // Enter name
         await tester.enterText(find.byType(TextFormField).first, '测试菜品');
 
-        // Enter invalid price
-        await tester.enterText(find.byType(TextFormField).last, 'abc');
+        // Enter invalid price (field index 1)
+        await tester.enterText(find.byType(TextFormField).at(1), 'abc');
 
         // Try to save
         await tester.tap(find.text('保存'));

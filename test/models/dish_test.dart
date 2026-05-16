@@ -12,6 +12,7 @@ void main() {
         'name': '红烧肉',
         'price': 28.5,
         'image_path': '/path/to/image.jpg',
+        'abbreviation': '肉',
         'sort_order': 2,
         'created_at': now.millisecondsSinceEpoch,
         'updated_at': later.millisecondsSinceEpoch,
@@ -23,6 +24,7 @@ void main() {
       expect(dish.name, '红烧肉');
       expect(dish.price, 28.5);
       expect(dish.imagePath, '/path/to/image.jpg');
+      expect(dish.abbreviation, '肉');
       expect(dish.sortOrder, 2);
       expect(dish.createdAt.millisecondsSinceEpoch, now.millisecondsSinceEpoch);
       expect(dish.updatedAt.millisecondsSinceEpoch, later.millisecondsSinceEpoch);
@@ -177,6 +179,41 @@ void main() {
       expect(str.contains('Dish'), true);
       expect(str.contains('测试菜品'), true);
       expect(str.contains('20.0'), true);
+    });
+
+    test('effectiveAbbreviation 返回设置的缩写', () {
+      final dish = Dish(
+        id: 1,
+        name: '牛肉面',
+        abbreviation: '牛面',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      expect(dish.effectiveAbbreviation, '牛面');
+    });
+
+    test('effectiveAbbreviation 未设置时返回 name 第一个字', () {
+      final dish = Dish(
+        id: 1,
+        name: '红烧肉',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      expect(dish.effectiveAbbreviation, '红');
+    });
+
+    test('effectiveAbbreviation 缩写为空字符串时返回 name 第一个字', () {
+      final dish = Dish(
+        id: 1,
+        name: '清炒时蔬',
+        abbreviation: '',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      expect(dish.effectiveAbbreviation, '清');
     });
   });
 }

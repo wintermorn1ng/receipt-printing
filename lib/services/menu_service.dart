@@ -22,7 +22,7 @@ class MenuService {
   /// [imagePath] 图片路径（可选）
   ///
   /// 抛出 [ArgumentError] 当名称为空时
-  Future<Dish> addDish(String name, double? price, String? imagePath) async {
+  Future<Dish> addDish(String name, double? price, String? imagePath, [String? abbreviation]) async {
     if (name.trim().isEmpty) {
       throw ArgumentError('菜品名称不能为空');
     }
@@ -32,6 +32,7 @@ class MenuService {
       name: name.trim(),
       price: price,
       imagePath: imagePath,
+      abbreviation: abbreviation,
       createdAt: now,
       updatedAt: now,
     );

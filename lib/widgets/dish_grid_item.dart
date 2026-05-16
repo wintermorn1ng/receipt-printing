@@ -107,6 +107,7 @@ class DishGridItem extends StatelessWidget {
 
   /// 构建占位图
   Widget _buildPlaceholder(ThemeData theme) {
+    final abbr = dish.effectiveAbbreviation;
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
@@ -115,10 +116,13 @@ class DishGridItem extends StatelessWidget {
         ),
       ),
       child: Center(
-        child: Icon(
-          Icons.restaurant,
-          size: 48,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        child: Text(
+          abbr,
+          style: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+          ),
         ),
       ),
     );

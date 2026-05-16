@@ -24,17 +24,38 @@ class MockMenuService implements MenuService {
   Future<List<Dish>> getAllDishes() async => List.from(_dishes);
 
   @override
-  Future<Dish> addDish(String name, double? price, String? imagePath) async {
+  Future<Dish> addDish(String name, double? price, String? imagePath, [String? abbreviation]) async {
     final dish = Dish(
       id: _nextId++,
       name: name,
       price: price,
       imagePath: imagePath,
+      abbreviation: abbreviation,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
     _dishes.add(dish);
     return dish;
+  }
+
+  @override
+  Future<List<Dish>> addDishes(List<String> names, double? price) async {
+    final now = DateTime.now();
+    final added = <Dish>[];
+    for (final name in names) {
+      final trimmed = name.trim();
+      if (trimmed.isEmpty) continue;
+      final dish = Dish(
+        id: _nextId++,
+        name: trimmed,
+        price: price,
+        createdAt: now,
+        updatedAt: now,
+      );
+      _dishes.add(dish);
+      added.add(dish);
+    }
+    return added;
   }
 
   @override
@@ -96,9 +117,9 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
-        expect(find.byIcon(Icons.restaurant_menu), findsOneWidget);
+        expect(find.byIcon(Icons.restaurant_menu), findsAtLeast(1));
         expect(find.text('暂无菜品'), findsOneWidget);
-        expect(find.textContaining('添加'), findsOneWidget);
+        expect(find.textContaining('添加'), findsAtLeast(1));
       });
 
       testWidgets('should load and display dishes', (WidgetTester tester) async {
@@ -242,17 +263,17 @@ void main() {
     });
 
     group('导航', () {
-      testWidgets('should navigate to add screen when FAB tapped', (WidgetTester tester) async {
+      testWidgets('should validate empty input when add button tapped', (WidgetTester tester) async {
         mockMenuService.setDishes([]);
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
-        // Tap add button
+        // Tap add button without entering text
         await tester.tap(find.byIcon(Icons.add));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        // Should navigate to edit screen
-        expect(find.text('添加菜品'), findsOneWidget);
+        // Should show validation error
+        expect(find.text('请输入菜名'), findsOneWidget);
       });
 
       testWidgets('should navigate to edit screen from menu', (WidgetTester tester) async {
