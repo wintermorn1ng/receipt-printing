@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-5-17
+
+### Fixed
+- fix: 修复 release build 在 Android 15 (API 35) 上蓝牙无法连接
+  - 根因：`AndroidManifest.xml` 中 `BLUETOOTH_SCAN` 缺少 `android:usesPermissionFlags="neverForLocation"`
+  - Android 12+ 引入此标记：未声明时系统认为蓝牙扫描依赖位置权限，用户拒绝位置权限则蓝牙扫描一并被阻断
+  - Android 15 对此限制检查更严格，debug build 因 adb 自动授予权限可以工作，release 侧载安装则失败
+  - 修复：为 `BLUETOOTH_SCAN` 添加 `usesPermissionFlags="neverForLocation"`，告知系统此应用不从蓝牙获取位置
+  - 验证：`flutter build apk --release` 通过，`aapt` 确认 `usesPermissionFlags=0x10000` 已进入最终 APK
+
+
 ## [1.0.1] - 2026-05-16
 
 ### Added
