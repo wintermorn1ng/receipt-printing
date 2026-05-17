@@ -1,14 +1,9 @@
 name: Build APK
 
 on:
-  push:
-    branches: [main, master]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/**'
   pull_request:
     branches: [main, master]
+    types: [closed]
   workflow_dispatch:
     inputs:
       build-mode:
@@ -22,6 +17,7 @@ on:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -42,10 +38,13 @@ jobs:
           cache: true
           cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
 
-      - name: Remove local proxy settings for CI
+      - name: Remove local proxy + Aliyun mirrors for CI
         run: |
+          # Remove local proxy settings (won't work on CI runners)
           sed -i '/proxyHost/d' android/gradle.properties
           sed -i '/proxyPort/d' android/gradle.properties
+          # Remove Aliyun Maven mirrors (502 from overseas), keep google() + mavenCentral()
+          sed -i '/maven.aliyun.com/d' android/build.gradle.kts
 
       - name: Install dependencies
         run: flutter pub get
@@ -62,3 +61,25 @@ jobs:
           name: receipt_printing-${{ inputs.build-mode || 'release' }}
           path: build/app/outputs/flutter-apk/app-${{ inputs.build-mode || 'release' }}.apk
           retention-days: 30
+
+  test:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
